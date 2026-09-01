@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Prospecção</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0d10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #14171b;
+    --panel2: #1b1f24;
+    --border: #232830;
+    --text: #e8eaed;
+    --muted: #eef0f2;
+    --accent: #8b5cf6;
+    --ig-grad: linear-gradient(135deg, #f9ce34, #ee2a7b 45%, #6228d7);
+    --wa: #22c55e;
+    --done: #2dd4a7;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Inter", system-ui, sans-serif;
+    padding: 20px 14px 60px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  h1 {
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 2px;
+    font-weight: 600;
+  }
+  .count { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+  .count b { color: var(--text); }
+
+  details {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  summary {
+    padding: 13px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '＋'; float: right; color: var(--muted); }
+  details[open] summary::after { content: '－'; }
+  .panel-body { padding: 0 16px 16px; }
+
+  textarea, input[type=text], input[type=tel], select {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  textarea { min-height: 100px; resize: vertical; }
+  .hint-small { font-size: 11px; color: var(--muted); margin: 8px 0 12px; line-height: 1.5; }
+  button {
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    padding: 11px 14px;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); width: 100%; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 100%; }
+
+  /* ---- Listas ---- */
+  .field-label { font-size: 11px; color: var(--muted); margin: 10px 0 4px; display: block; }
+  .lista-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .lista-row select { flex: 1; }
+  .nova-lista-row { display: flex; gap: 8px; }
+  .nova-lista-row input { flex: 1; }
+  .nova-lista-row button { white-space: nowrap; }
+
+  /* ---- CSV upload ---- */
+  .csv-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel2); border: 1px dashed var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;
+  }
+  .csv-row input[type="file"] { flex: 1; font-size: 12px; color: var(--muted); }
+
+  /* ---- Quota bar ---- */
+  .quota-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+  .quota-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .quota-top b { color: var(--text); font-size: 13px; }
+  .quota-track { height: 6px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+  .quota-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .quota-fill.cheio { background: var(--danger); }
+
+  /* ---- Play button ---- */
+  .play-btn {
+    width: 100%; padding: 16px; border-radius: 12px;
+    background: linear-gradient(135deg, #8b5cf6, #6228d7);
+    font-size: 15px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  /* ---- Busca ---- */
+  .search-box { margin-bottom: 18px; }
+  .search-box input { font-size: 14px; }
+
+  /* ---- Play mode card ---- */
+  .play-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px 18px; text-align: center; margin-bottom: 16px; }
+  .play-num { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .play-username { font-size: 22px; font-weight: 700; margin-bottom: 18px; word-break: break-all; }
+  .play-ig-btn { width: 100%; padding: 15px; border-radius: 10px; background: var(--ig-grad); font-size: 15px; margin-bottom: 16px; }
+  .decision-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .decision-row { display: flex; flex-direction: column; gap: 8px; }
+  .btn-aprovar { background: var(--done); color: #04241a; }
+  .btn-offline { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warn); color: var(--warn); }
+
+  .exit-play { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; text-decoration: underline; cursor: pointer; }
+  .empty-play { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+  /* ---- List / filters ---- */
+  .filters { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+  .chip {
+    padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); white-space: nowrap; cursor: pointer; background: var(--panel);
+  }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chip.chip-wa { border-color: var(--wa); color: var(--wa); font-weight: 700; }
+  .chip.chip-wa.active { background: var(--wa); color: #04241a; border-color: var(--wa); }
+  .chip.chip-done { border-color: var(--done); color: var(--done); font-weight: 700; }
+  .chip.chip-done.active { background: var(--done); color: #04241a; border-color: var(--done); }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+  .card.respondeu { border-color: var(--wa); background: linear-gradient(180deg, rgba(34,197,94,0.10), var(--panel) 55%); }
+  .card.concluido-wa { opacity: 0.55; }
+  .card-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; }
+  .num { width: 24px; height: 24px; border-radius: 6px; background: var(--panel2); color: var(--muted); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .card-header-info { flex: 1; min-width: 0; }
+  .card-header-nome { font-size: 14px; font-weight: 600; word-break: break-all; }
+  .card-header-user { font-size: 12px; color: var(--muted); }
+  .card.respondeu .card-header-user { color: var(--wa); font-weight: 700; }
+  .chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+  .del { color: var(--muted); font-size: 18px; line-height: 1; padding: 4px 6px; cursor: pointer; flex-shrink: 0; }
+  .card-body { padding: 0 14px 14px; }
+
+  .actions { display: flex; gap: 8px; margin-bottom: 10px; }
+  .actions button { flex: 1; padding: 9px; font-size: 12.5px; }
+  .btn-ig { background: var(--ig-grad); }
+  .btn-wa { background: var(--wa); }
+
+  /* ---- Checkboxes do lead ---- */
+  .lead-checks { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 12px; font-size: 13px; cursor: pointer; user-select: none;
+  }
+  .check-row input[type=checkbox] { width: 19px; height: 19px; accent-color: var(--accent); flex-shrink: 0; }
+  .check-row.checked { border-color: var(--accent); }
+  .check-row.disabled { opacity: 0.35; cursor: not-allowed; }
+  .check-row.respondeu input[type=checkbox] { accent-color: var(--wa); }
+  .check-row.respondeu.checked { border-color: var(--wa); background: rgba(34,197,94,0.12); color: var(--wa); font-weight: 700; }
+
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0; }
+  .section-label { font-size: 12px; color: var(--muted); margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ---- Scripts de resposta (sequência) ---- */
+  .script-block { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .script-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .script-title span.badge { background: var(--accent); color: #fff; border-radius: 20px; padding: 2px 8px; font-size: 10px; text-transform: none; letter-spacing: 0; }
+  .script-title span.badge.done { background: var(--done); color: #04241a; }
+  .script-reset { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; text-decoration: underline; cursor: pointer; }
+
+  /* ---- Referência rápida WhatsApp (Nutri / Secretária) ---- */
+  .waref-tabs { display: flex; gap: 8px; margin: 12px 0 14px; }
+  .waref-tab {
+    flex: 1; padding: 14px 6px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--muted); font-weight: 700; font-size: 12px;
+    text-align: center; cursor: pointer; line-height: 1.3;
+  }
+  .waref-tab.active { background: var(--wa); color: #04241a; border-color: var(--wa); }
+  .waref-block { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .waref-etapa-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .waref-msg { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.55; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+  .waref-copybtn { width: 100%; background: var(--wa); color: #04241a; padding: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Prospecção</h1>
+  <div class="count" id="topCount">0 perfis</div>
+  <button id="btnInstalar" class="btn-ghost" style="display:none; border-color:var(--accent); color:var(--accent); margin-bottom:16px;" onclick="instalarApp()">⬇️ Instalar app no celular</button>
+
+  <div id="viewNormal">
+    <details open id="listaBox">
+      <summary>Lista atual</summary>
+      <div class="panel-body">
+        <div class="lista-row">
+          <select id="seletorLista" onchange="trocarLista(this.value)"><option>—</option></select>
+          <button class="btn-ghost" style="width:auto;" onclick="apagarListaAtual()">🗑</button>
+        </div>
+        <label class="field-label">Criar nova lista</label>
+        <div class="nova-lista-row">
+          <input type="text" id="nomeNovaLista" placeholder="Ex: Lote julho - nutricionistas SP">
+          <button class="btn-primary" style="width:auto;" onclick="criarNovaLista()">+ Criar</button>
+        </div>
+        <p class="hint-small">Tudo fica salvo só neste celular (não sincroniza com outro aparelho).</p>
+      </div>
+    </details>
+
+    <details id="importBox">
+      <summary>Adicionar perfis à fila desta lista</summary>
+      <div class="panel-body">
+        <div class="csv-row">
+          <input type="file" id="csvFile" accept=".csv,.txt" onchange="handleCsvUpload(event)">
+        </div>
+        <p class="hint-small">Suba um .csv com a coluna <b>instagram</b> (outras colunas, se houver, são ignoradas) — cabeçalho é ignorado automaticamente. O conteúdo cai na caixa abaixo pra você revisar antes de confirmar.</p>
+        <textarea id="bulkInput" placeholder="Cole 1 perfil por linha:&#10;instagram.com/nutri.joana&#10;@nutri.carla&#10;dr.paulo"></textarea>
+        <p class="hint-small">1 perfil por linha: pode ser URL do Instagram ou só o @.</p>
+        <button class="btn-primary" onclick="adicionarLote()">Adicionar à fila</button>
+      </div>
+    </details>
+
+    <div class="quota-box">
+      <div class="quota-top"><span>Abordagens a fazer</span><b id="quotaTexto">0</b></div>
+    </div>
+
+    <details>
+      <summary>Modelo de mensagem</summary>
+      <div class="panel-body">
+        <textarea id="templateInput" style="min-height:70px;"></textarea>
+        <p class="hint-small">Use <b>{saudacao}</b> pra saudação automática. Vale pra todas as listas.</p>
+        <button class="btn-primary" onclick="salvarTemplate()">Salvar modelo</button>
+      </div>
+    </details>
+
+    <details>
+      <summary>Scripts de resposta (sequências de 3 etapas)</summary>
+      <div class="panel-body">
+        <p class="hint-small">Cada script tem 3 etapas. A sequência do Instagram aparece dentro do card de cada lead. As sequências de WhatsApp (Nutricionista/Secretária) aparecem na referência rápida lá embaixo, abaixo de "Esvaziar esta lista".</p>
+
+        <p class="section-label" style="margin:14px 0 6px;">Instagram (sequência de 3)</p>
+        <textarea id="scriptIg1" placeholder="Etapa 1"></textarea>
+        <textarea id="scriptIg2" placeholder="Etapa 2" style="margin-top:6px;"></textarea>
+        <textarea id="scriptIg3" placeholder="Etapa 3" style="margin-top:6px;"></textarea>
+
+        <p class="section-label" style="margin:14px 0 6px;">WhatsApp — respondeu a Nutricionista</p>
+        <textarea id="scriptWaNutri1" placeholder="Etapa 1"></textarea>
+        <textarea id="scriptWaNutri2" placeholder="Etapa 2" style="margin-top:6px;"></textarea>
+        <textarea id="scriptWaNutri3" placeholder="Etapa 3" style="margin-top:6px;"></textarea>
+
+        <p class="section-label" style="margin:14px 0 6px;">WhatsApp — respondeu a Secretária</p>
+        <textarea id="scriptWaSec1" placeholder="Etapa 1"></textarea>
+        <textarea id="scriptWaSec2" placeholder="Etapa 2" style="margin-top:6px;"></textarea>
+        <textarea id="scriptWaSec3" placeholder="Etapa 3" style="margin-top:6px;"></textarea>
+
+        <button class="btn-primary" style="margin-top:12px;" onclick="salvarScripts()">Salvar scripts</button>
+      </div>
+    </details>
+
+    <button class="play-btn" onclick="iniciarPlay()" id="btnIniciarPlay">▶ Iniciar triagem</button>
+
+    <div class="search-box">
+      <input type="text" id="buscaInput" placeholder="🔎 Buscar por @" oninput="buscaAtual = this.value; renderLista();">
+    </div>
+
+    <div class="section-label">Aprovados para abordagem</div>
+    <div class="filters">
+      <div class="chip active" data-f="insta" onclick="setFiltro('insta')">Enviar no Insta</div>
+      <div class="chip chip-wa" data-f="whatsapp" onclick="setFiltro('whatsapp')">Enviar no WhatsApp</div>
+      <div class="chip chip-done" data-f="concluidos" onclick="setFiltro('concluidos')">Concluídos</div>
+    </div>
+    <div id="lista"></div>
+
+    <details style="margin-top:18px;">
+      <summary>Descartados (excluídos)</summary>
+      <div class="panel-body" id="listaDescartados"></div>
+    </details>
+
+    <div style="margin-top:18px;">
+      <button class="btn-ghost" onclick="limparListaAtual()">Esvaziar esta lista (apaga os contatos)</button>
+    </div>
+
+    <div class="section-label" style="margin-top:26px;">Sequência WhatsApp — referência rápida</div>
+    <p class="hint-small" style="margin-top:-4px;">Escolha quem respondeu e copie as etapas em sequência, sem precisar abrir o card do lead.</p>
+    <div class="waref-tabs">
+      <div class="waref-tab active" data-w="nutri" onclick="setWaRef('nutri')">👩‍⚕️ Ela é a Nutricionista</div>
+      <div class="waref-tab" data-w="secretaria" onclick="setWaRef('secretaria')">🗂 Ela é a Secretária</div>
+      <div class="waref-tab" data-w="ig" onclick="setWaRef('ig')">📸 Sequência Instagram</div>
+    </div>
+    <div id="waRefBox"></div>
+  </div>
+
+  <div id="viewPlay" style="display:none;"></div>
+</div>
+
+<script>
+const TEMPLATE_KEY = 'prospeccao_template_msg';
+const SCRIPTS_KEY = 'prospeccao_scripts_v1';
+const LISTAS_KEY = 'prospeccao_listas_v1';
+const LISTA_ATUAL_KEY = 'prospeccao_lista_atual';
+const TEMPLATE_PADRAO = 'Olá! Tudo bem? {saudacao} ☺️';
+
+const SCRIPTS_PADRAO = {
+  ig: ['Etapa 1 do script de Instagram (edite em "Scripts de resposta")', 'Etapa 2...', 'Etapa 3...'],
+  waNutri: ['Etapa 1 — respondeu a nutricionista', 'Etapa 2...', 'Etapa 3...'],
+  waSec: ['Etapa 1 — respondeu a secretária', 'Etapa 2...', 'Etapa 3...']
+};
+
+let listaAtualId = localStorage.getItem(LISTA_ATUAL_KEY) || null;
+let contatos = [];
+let filtroAtual = 'insta';
+let buscaAtual = '';
+let cardsAbertos = new Set();
+let waRefAtual = 'nutri';
+
+function gerarId() {
+  return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------- Listas (localStorage) ---------- */
+
+function carregarListasArray() { return JSON.parse(localStorage.getItem(LISTAS_KEY) || '[]'); }
+function salvarListasArray(arr) { localStorage.setItem(LISTAS_KEY, JSON.stringify(arr)); }
+function contatosKey(id) { return 'prospeccao_contatos_' + id; }
+
+function carregarListas() {
+  const arr = carregarListasArray();
+  const sel = document.getElementById('seletorLista');
+  if (arr.length === 0) {
+    sel.innerHTML = '<option value="">Nenhuma lista ainda — crie uma abaixo</option>';
+    listaAtualId = null;
+    contatos = [];
+    renderTudo();
+    return;
+  }
+  sel.innerHTML = arr.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
+  if (!listaAtualId || !arr.find(l => l.id === listaAtualId)) listaAtualId = arr[0].id;
+  sel.value = listaAtualId;
+  localStorage.setItem(LISTA_ATUAL_KEY, listaAtualId);
+  carregarContatos();
+}
+
+function criarNovaLista() {
+  const nome = document.getElementById('nomeNovaLista').value.trim();
+  if (!nome) { alert('Dê um nome pra lista.'); return; }
+  const arr = carregarListasArray();
+  const nova = { id: gerarId(), nome, criadoEm: Date.now() };
+  arr.unshift(nova);
+  salvarListasArray(arr);
+  document.getElementById('nomeNovaLista').value = '';
+  listaAtualId = nova.id;
+  localStorage.setItem(LISTA_ATUAL_KEY, listaAtualId);
+  carregarListas();
+}
+
+function trocarLista(id) {
+  if (!id) return;
+  listaAtualId = id;
+  localStorage.setItem(LISTA_ATUAL_KEY, id);
+  filtroAtual = 'insta';
+  buscaAtual = '';
+  document.getElementById('buscaInput').value = '';
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.f === 'insta'));
+  carregarContatos();
+}
+
+function apagarListaAtual() {
+  if (!listaAtualId) return;
+  if (!confirm('Apagar esta lista inteira (todos os contatos junto)? Não dá pra desfazer.')) return;
+  const arr = carregarListasArray().filter(l => l.id !== listaAtualId);
+  salvarListasArray(arr);
+  localStorage.removeItem(contatosKey(listaAtualId));
+  listaAtualId = null;
+  localStorage.removeItem(LISTA_ATUAL_KEY);
+  carregarListas();
+}
+
+function limparListaAtual() {
+  if (!listaAtualId) return;
+  if (!confirm('Apagar TODOS os contatos desta lista? A lista em si continua existindo, vazia.')) return;
+  contatos = [];
+  salvarContatos();
+  renderTudo();
+}
+
+/* ---------- Contatos (localStorage) ---------- */
+
+function carregarContatos() {
+  if (!listaAtualId) { contatos = []; renderTudo(); return; }
+  contatos = JSON.parse(localStorage.getItem(contatosKey(listaAtualId)) || '[]');
+  renderTudo();
+}
+
+function salvarContatos() {
+  if (listaAtualId) localStorage.setItem(contatosKey(listaAtualId), JSON.stringify(contatos));
+}
+
+function atualizarContato(id, patch) {
+  const c = contatos.find(x => x.id === id);
+  if (c) Object.assign(c, patch);
+  salvarContatos();
+  renderTudo();
+}
+
+function excluirDeVez(id) {
+  if (!confirm('Remover este perfil permanentemente da lista?')) return;
+  contatos = contatos.filter(c => c.id !== id);
+  salvarContatos();
+  renderTudo();
+}
+
+/* ---------- Template e scripts (globais, por dispositivo) ---------- */
+
+function saudacaoAtual() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function aplicarPlaceholders(template, contato) {
+  const nome = ((contato && contato.nome) || '').trim();
+  return template.replace(/{nome}/g, nome || 'tudo bem').replace(/{saudacao}/g, saudacaoAtual());
+}
+
+function getTemplate() { return localStorage.getItem(TEMPLATE_KEY) || TEMPLATE_PADRAO; }
+
+function salvarTemplate() {
+  const v = document.getElementById('templateInput').value.trim() || TEMPLATE_PADRAO;
+  localStorage.setItem(TEMPLATE_KEY, v);
+  renderLista();
+}
+
+function getScripts() {
+  const s = JSON.parse(localStorage.getItem(SCRIPTS_KEY) || 'null');
+  return s || SCRIPTS_PADRAO;
+}
+
+function salvarScripts() {
+  const s = {
+    ig: [
+      document.getElementById('scriptIg1').value || SCRIPTS_PADRAO.ig[0],
+      document.getElementById('scriptIg2').value || SCRIPTS_PADRAO.ig[1],
+      document.getElementById('scriptIg3').value || SCRIPTS_PADRAO.ig[2]
+    ],
+    waNutri: [
+      document.getElementById('scriptWaNutri1').value || SCRIPTS_PADRAO.waNutri[0],
+      document.getElementById('scriptWaNutri2').value || SCRIPTS_PADRAO.waNutri[1],
+      document.getElementById('scriptWaNutri3').value || SCRIPTS_PADRAO.waNutri[2]
+    ],
+    waSec: [
+      document.getElementById('scriptWaSec1').value || SCRIPTS_PADRAO.waSec[0],
+      document.getElementById('scriptWaSec2').value || SCRIPTS_PADRAO.waSec[1],
+      document.getElementById('scriptWaSec3').value || SCRIPTS_PADRAO.waSec[2]
+    ]
+  };
+  localStorage.setItem(SCRIPTS_KEY, JSON.stringify(s));
+  renderLista();
+  renderWaRef();
+}
+
+function carregarScriptsNaTela() {
+  const s = getScripts();
+  document.getElementById('scriptIg1').value = s.ig[0];
+  document.getElementById('scriptIg2').value = s.ig[1];
+  document.getElementById('scriptIg3').value = s.ig[2];
+  document.getElementById('scriptWaNutri1').value = s.waNutri[0];
+  document.getElementById('scriptWaNutri2').value = s.waNutri[1];
+  document.getElementById('scriptWaNutri3').value = s.waNutri[2];
+  document.getElementById('scriptWaSec1').value = s.waSec[0];
+  document.getElementById('scriptWaSec2').value = s.waSec[1];
+  document.getElementById('scriptWaSec3').value = s.waSec[2];
+}
+
+function copiarTexto(texto) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(texto).catch(() => prompt('Copie manualmente:', texto));
+  }
+  prompt('Copie manualmente:', texto);
+  return Promise.resolve();
+}
+
+/* ---- Sequência Instagram: 1 clique SEMPRE copia a etapa, abre o Instagram e avança
+   (inclusive o primeiro clique — antes ele só "armava" a etapa 1 sem copiar/abrir nada) ---- */
+function copiarEAbrirIG(id) {
+  const c = contatos.find(x => x.id === id);
+  if (!c) return;
+  const etapaAtual = c.ig_etapa || 0;
+  if (etapaAtual >= 3) return; // já concluída, usar "Reiniciar" pra rodar de novo
+  const proximaEtapa = etapaAtual + 1;
+  const texto = aplicarPlaceholders(getScripts().ig[proximaEtapa - 1], c);
+  copiarTexto(texto);
+  abrirInstagram(c.username);
+  atualizarContato(id, { ig_etapa: proximaEtapa });
+}
+
+function resetarIG(id) { atualizarContato(id, { ig_etapa: 0 }); }
+
+function renderScriptIG(c) {
+  const etapa = c.ig_etapa || 0;
+  if (etapa >= 3) {
+    return `<div class="script-block"><div class="script-title">Sequência Instagram <span class="badge done">✓ concluída</span></div>
+      <div class="script-reset" onclick="resetarIG('${c.id}')">↺ Reiniciar sequência</div></div>`;
+  }
+  const label = etapa === 0 ? 'Copiar etapa 1 e abrir Instagram' : `Copiar etapa ${etapa + 1} e abrir Instagram`;
+  const badge = etapa === 0 ? 'não iniciada' : `etapa ${etapa}/3 feita`;
+  return `<div class="script-block"><div class="script-title">Sequência Instagram <span class="badge">${badge}</span></div>
+    <button class="btn-ig" style="width:100%;" onclick="copiarEAbrirIG('${c.id}')">📋 ${label}</button>
+    ${etapa > 0 ? `<div class="script-reset" onclick="resetarIG('${c.id}')">↺ Reiniciar</div>` : ''}</div>`;
+}
+
+/* ---------- Checkboxes do lead: enviei no Insta / enviei no WhatsApp / me respondeu ---------- */
+
+function toggleEnviouInsta(id) {
+  const c = contatos.find(x => x.id === id);
+  if (!c) return;
+  const novo = !c.enviouInsta;
+  const patch = { enviouInsta: novo };
+  if (!novo) patch.enviouWhatsapp = false; // desmarcou insta -> whatsapp volta a ficar bloqueado
+  atualizarContato(id, patch);
+}
+
+function toggleEnviouWhatsapp(id) {
+  const c = contatos.find(x => x.id === id);
+  if (!c || !c.enviouInsta) return;
+  atualizarContato(id, { enviouWhatsapp: !c.enviouWhatsapp });
+}
+
+function toggleRespondeu(id) {
+  const c = contatos.find(x => x.id === id);
+  if (!c) return;
+  atualizarContato(id, { respondeu: !c.respondeu });
+}
+
+/* ---------- Quota ---------- */
+
+function contarAFazer() {
+  return contatos.filter(c => c.status === 'aprovado' && !c.enviouInsta).length;
+}
+
+function renderQuota() {
+  document.getElementById('quotaTexto').textContent = String(contarAFazer());
+}
+
+/* ---------- Importação ---------- */
+
+function extrairUsername(valor) {
+  let v = valor.trim();
+  v = v.replace(/^https?:\/\//i, '');
+  v = v.replace(/^(www\.)?instagram\.com\//i, '');
+  v = v.replace(/^@/, '');
+  v = v.split('/')[0].split('?')[0].trim();
+  return v;
+}
+
+function adicionarLote() {
+  if (!listaAtualId) { alert('Escolha ou crie uma lista primeiro.'); return; }
+  const raw = document.getElementById('bulkInput').value;
+  const linhas = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (linhas.length === 0) return;
+
+  const existentes = new Set(contatos.map(c => c.username.toLowerCase()));
+  let proximoNum = contatos.length > 0 ? Math.max(...contatos.map(c => c.num)) + 1 : 1;
+  let ignorados = 0;
+
+  linhas.forEach(linha => {
+    const primeiraColuna = linha.split(',')[0];
+    const username = extrairUsername(primeiraColuna);
+    if (!username) return;
+    if (existentes.has(username.toLowerCase())) { ignorados++; return; }
+    contatos.push({
+      id: gerarId(),
+      num: proximoNum++,
+      username,
+      status: 'pendente',
+      ig_etapa: 0,
+      enviouInsta: false,
+      enviouWhatsapp: false,
+      respondeu: false
+    });
+    existentes.add(username.toLowerCase());
+  });
+
+  salvarContatos();
+  document.getElementById('bulkInput').value = '';
+  document.getElementById('importBox').removeAttribute('open');
+  renderTudo();
+  if (ignorados > 0) alert(ignorados + ' perfil(is) já existiam nesta lista e foram ignorados (duplicados).');
+}
+
+function handleCsvUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    let linhas = String(e.target.result || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    linhas = linhas.map(l => (l.includes(';') && !l.includes(',')) ? l.replace(/;/g, ',') : l);
+    if (linhas.length && /instagram|whats\s*app|nome/i.test(linhas[0])) linhas.shift();
+    const bulkInput = document.getElementById('bulkInput');
+    bulkInput.value = (bulkInput.value.trim() ? bulkInput.value.trim() + '\n' : '') + linhas.join('\n');
+    document.getElementById('importBox').setAttribute('open', '');
+    bulkInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  reader.readAsText(file, 'UTF-8');
+  event.target.value = '';
+}
+
+/* ---------- MODO TRIAGEM ---------- */
+
+function proximoPendente() {
+  return contatos.filter(c => c.status === 'pendente').sort((a, b) => a.num - b.num)[0];
+}
+
+function iniciarPlay() {
+  document.getElementById('viewNormal').style.display = 'none';
+  document.getElementById('viewPlay').style.display = 'block';
+  renderPlay();
+}
+
+function sairDoPlay() {
+  document.getElementById('viewPlay').style.display = 'none';
+  document.getElementById('viewNormal').style.display = 'block';
+  renderTudo();
+}
+
+function renderPlay() {
+  const view = document.getElementById('viewPlay');
+  const proximo = proximoPendente();
+
+  if (!proximo) {
+    view.innerHTML = `
+      <div class="play-card"><div class="empty-play">🎉 Fila de triagem vazia.<br>Adicione mais perfis pra continuar.</div></div>
+      <div class="exit-play" onclick="sairDoPlay()">← Voltar</div>`;
+    return;
+  }
+
+  view.innerHTML = `
+    <div class="quota-box">
+      <div class="quota-top"><span>Abordagens a fazer</span><b>${contarAFazer()}</b></div>
+    </div>
+    <div class="play-card">
+      <div class="play-num">Perfil #${proximo.num}</div>
+      <div class="play-username">@${proximo.username}</div>
+      <button class="play-ig-btn" onclick="verNoInstagram('${proximo.id}')">👀 Ver perfil no Instagram</button>
+      <div class="decision-label">O que fazer com esse perfil?</div>
+      <div class="decision-row">
+        <button class="btn-aprovar" onclick="decidir('${proximo.id}', 'aprovado')">✅ Vou prospectar</button>
+        <button class="btn-offline" onclick="decidir('${proximo.id}', 'excluido')">🚫 Não vou, excluir</button>
+      </div>
+    </div>
+    <div class="exit-play" onclick="sairDoPlay()">← Encerrar sessão de triagem</div>`;
+}
+
+function verNoInstagram(id) {
+  const c = contatos.find(x => x.id === id);
+  if (!c) return;
+  abrirInstagram(c.username);
+}
+
+function decidir(id, novoStatus) {
+  const patch = { status: novoStatus };
+  if (novoStatus === 'aprovado') {
+    Object.assign(patch, { ig_etapa: 0, enviouInsta: false, enviouWhatsapp: false, respondeu: false });
+  }
+  atualizarContato(id, patch);
+  renderPlay();
+}
+
+/* ---------- LISTA PRINCIPAL ---------- */
+
+function setFiltro(f) {
+  filtroAtual = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.f === f));
+  renderLista();
+}
+
+function abrirInstagram(username) {
+  const appUrl = 'instagram://user?username=' + encodeURIComponent(username);
+  const webUrl = 'https://www.instagram.com/' + encodeURIComponent(username) + '/';
+  window.location.href = appUrl;
+  setTimeout(() => { window.location.href = webUrl; }, 700);
+}
+
+function toggleCard(id) {
+  if (cardsAbertos.has(id)) cardsAbertos.delete(id); else cardsAbertos.add(id);
+  renderLista();
+}
+
+function filtrarAprovados() {
+  const aprovados = contatos.filter(c => c.status === 'aprovado');
+  let base;
+  // Um card aberto (cardsAbertos) nunca some da tela por causa do filtro — só some quando
+  // você fecha o card ou troca de aba/lista. Isso evita o card "sumir" no meio da marcação.
+  if (filtroAtual === 'whatsapp') base = aprovados.filter(c => (c.enviouInsta && !c.enviouWhatsapp) || cardsAbertos.has(c.id));
+  else if (filtroAtual === 'concluidos') base = aprovados.filter(c => c.enviouWhatsapp || cardsAbertos.has(c.id));
+  else base = aprovados.filter(c => !c.enviouInsta || cardsAbertos.has(c.id)); // 'insta' (padrão): quem acabou de ser aprovado cai aqui
+
+  const termo = buscaAtual.trim().toLowerCase();
+  if (termo) base = base.filter(c => c.username.toLowerCase().includes(termo));
+  return base;
+}
+
+function statusLabel(c) {
+  if (c.respondeu) return '💬 Respondeu';
+  if (c.enviouWhatsapp) return '✓ Concluído';
+  if (c.enviouInsta) return 'Pronto pra WhatsApp';
+  return 'Aguardando envio no Insta';
+}
+
+function renderLista() {
+  const lista = document.getElementById('lista');
+  const visiveis = filtrarAprovados().sort((a, b) => (Number(b.respondeu) - Number(a.respondeu)) || (a.num - b.num));
+
+  if (!listaAtualId) {
+    lista.innerHTML = '<div class="empty">Crie uma lista acima pra começar.</div>';
+  } else if (visiveis.length === 0) {
+    lista.innerHTML = '<div class="empty">Nada aqui ainda.<br>Use "Iniciar triagem" pra aprovar perfis, ou busque acima.</div>';
+  } else {
+    lista.innerHTML = visiveis.map(c => {
+      const aberto = cardsAbertos.has(c.id);
+      const classes = ['card'];
+      if (c.respondeu) classes.push('respondeu');
+      if (c.enviouWhatsapp) classes.push('concluido-wa');
+      return `
+      <div class="${classes.join(' ')}">
+        <div class="card-header" onclick="toggleCard('${c.id}')">
+          <div class="num">${c.num}</div>
+          <div class="card-header-info">
+            <div class="card-header-nome">@${c.username}</div>
+            <div class="card-header-user">${statusLabel(c)}</div>
+          </div>
+          <div class="chevron">${aberto ? '▲' : '▼'}</div>
+          <div class="del" onclick="event.stopPropagation(); excluirDeVez('${c.id}')">✕</div>
+        </div>
+        ${aberto ? `
+        <div class="card-body">
+          <div class="actions">
+            <button class="btn-ig" style="flex:1;" onclick="abrirInstagram('${c.username}')">Abrir Instagram</button>
+          </div>
+          <div class="lead-checks">
+            <label class="check-row${c.enviouInsta ? ' checked' : ''}">
+              <input type="checkbox" ${c.enviouInsta ? 'checked' : ''} onchange="toggleEnviouInsta('${c.id}')">
+              ✅ Enviei no Insta
+            </label>
+            <label class="check-row${!c.enviouInsta ? ' disabled' : ''}${c.enviouWhatsapp ? ' checked' : ''}">
+              <input type="checkbox" ${c.enviouWhatsapp ? 'checked' : ''} ${!c.enviouInsta ? 'disabled' : ''} onchange="toggleEnviouWhatsapp('${c.id}')">
+              ✅ Enviei no WhatsApp
+            </label>
+            <label class="check-row respondeu${c.respondeu ? ' checked' : ''}">
+              <input type="checkbox" ${c.respondeu ? 'checked' : ''} onchange="toggleRespondeu('${c.id}')">
+              💬 Ela me respondeu
+            </label>
+          </div>
+          ${renderScriptIG(c)}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  const descartados = contatos.filter(c => c.status === 'excluido').sort((a,b) => a.num - b.num);
+  const listaDesc = document.getElementById('listaDescartados');
+  if (descartados.length === 0) {
+    listaDesc.innerHTML = '<p class="hint-small">Nenhum perfil descartado ainda.</p>';
+  } else {
+    listaDesc.innerHTML = descartados.map(c => `
+      <div class="card">
+        <div class="card-header">
+          <div class="num">${c.num}</div>
+          <div class="card-header-info"><div class="card-header-nome">@${c.username}</div></div>
+        </div>
+        <div class="card-body">
+          <div class="actions" style="margin-top:0;">
+            <button class="btn-ghost" style="flex:1;" onclick="restaurar('${c.id}')">↺ Restaurar pra fila</button>
+            <button class="btn-ghost" style="flex:1;" onclick="excluirDeVez('${c.id}')">✕ Apagar de vez</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function restaurar(id) {
+  atualizarContato(id, { status: 'pendente', ig_etapa: 0, enviouInsta: false, enviouWhatsapp: false, respondeu: false });
+}
+
+/* ---------- Referência rápida WhatsApp (Nutricionista / Secretária) ---------- */
+
+function setWaRef(w) {
+  waRefAtual = w;
+  document.querySelectorAll('.waref-tab').forEach(t => t.classList.toggle('active', t.dataset.w === w));
+  renderWaRef();
+}
+
+function arrDaAbaAtual(scripts) {
+  if (waRefAtual === 'nutri') return scripts.waNutri;
+  if (waRefAtual === 'secretaria') return scripts.waSec;
+  return scripts.ig;
+}
+
+function copiarWaRef(i) {
+  const scripts = getScripts();
+  const arr = arrDaAbaAtual(scripts);
+  const texto = aplicarPlaceholders(arr[i], {});
+  copiarTexto(texto);
+}
+
+function renderWaRef() {
+  const box = document.getElementById('waRefBox');
+  if (!box) return;
+  const scripts = getScripts();
+  const arr = arrDaAbaAtual(scripts);
+  box.innerHTML = arr.map((msg, i) => {
+    const texto = aplicarPlaceholders(msg, {});
+    return `<div class="waref-block">
+      <div class="waref-etapa-title">Etapa ${i + 1} / 3</div>
+      <div class="waref-msg">${escapeHtml(texto)}</div>
+      <button class="waref-copybtn" onclick="copiarWaRef(${i})">📋 Copiar mensagem ${i + 1}</button>
+    </div>`;
+  }).join('');
+}
+
+function renderTudo() {
+  const pendentes = contatos.filter(c => c.status === 'pendente').length;
+  const aprovados = contatos.filter(c => c.status === 'aprovado').length;
+  document.getElementById('topCount').innerHTML =
+    '<b>' + contatos.length + '</b> perfis nesta lista · <b>' + pendentes + '</b> na fila · <b>' + aprovados + '</b> aprovados';
+  document.getElementById('btnIniciarPlay').disabled = pendentes === 0;
+  document.getElementById('btnIniciarPlay').textContent = pendentes === 0 ? '▶ Nenhum perfil pendente na fila' : '▶ Iniciar triagem (' + pendentes + ' na fila)';
+  renderQuota();
+  renderLista();
+}
+
+/* ---------- Boot ---------- */
+
+document.getElementById('templateInput').value = getTemplate();
+carregarScriptsNaTela();
+carregarListas();
+renderWaRef();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+let eventoInstalacao = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  eventoInstalacao = e;
+  const btn = document.getElementById('btnInstalar');
+  if (btn) btn.style.display = 'block';
+});
+
+function instalarApp() {
+  const btn = document.getElementById('btnInstalar');
+  if (!eventoInstalacao) {
+    alert('Se o botão não funcionar: abra o menu (⋮) do Chrome e toque em "Instalar app" ou "Adicionar à tela inicial".');
+    return;
+  }
+  eventoInstalacao.prompt();
+  eventoInstalacao.userChoice.finally(() => {
+    eventoInstalacao = null;
+    if (btn) btn.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btnInstalar');
+  if (btn) btn.style.display = 'none';
+});
+</script>
+</body>
+</html>
