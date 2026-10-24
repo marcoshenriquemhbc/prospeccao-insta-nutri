@@ -91,6 +91,9 @@
   button:disabled { opacity: 0.3; cursor: not-allowed; }
   .btn-primary { background: var(--accent); width: 100%; }
   .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 100%; }
+  .btn-download { background: transparent; border: 1px solid var(--done); color: var(--done); width: 100%; }
+  .download-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .download-row button { flex: 1; }
 
   /* ---- Listas ---- */
   .field-label { font-size: 11px; color: var(--muted); margin: 10px 0 4px; display: block; }
@@ -288,6 +291,10 @@
     </div>
 
     <div class="section-label">Aprovados para abordagem</div>
+    <div class="download-row">
+      <button class="btn-download" onclick="baixarAprovados('csv')">⬇️ CSV</button>
+      <button class="btn-download" onclick="baixarAprovados('txt')">⬇️ TXT (@usuários)</button>
+    </div>
     <div class="filters">
       <div class="chip active" data-f="insta" onclick="setFiltro('insta')">Enviar no Insta</div>
       <div class="chip chip-wa" data-f="whatsapp" onclick="setFiltro('whatsapp')">Enviar no WhatsApp</div>
@@ -361,7 +368,7 @@ function carregarListas() {
     renderTudo();
     return;
   }
-  sel.innerHTML = arr.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
+  sel.innerHTML = arr.map(l => `<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join('');
   if (!listaAtualId || !arr.find(l => l.id === listaAtualId)) listaAtualId = arr[0].id;
   sel.value = listaAtualId;
   localStorage.setItem(LISTA_ATUAL_KEY, listaAtualId);
@@ -437,6 +444,71 @@ function excluirDeVez(id) {
   renderTudo();
 }
 
+/* ---------- Download (CSV e TXT) ---------- */
+
+function csvCampo(valor) {
+  const s = String(valor == null ? '' : valor);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+function formatarData(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('pt-BR');
+}
+
+function nomeArquivoBase() {
+  const nomeLista = (carregarListasArray().find(l => l.id === listaAtualId) || {}).nome || 'lista';
+  return nomeLista.replace(/[^a-zA-Z0-9À-ÿ_-]+/g, '_') + '_aprovados_' +
+    new Date().toISOString().slice(0, 10);
+}
+
+function dispararDownload(conteudo, tipoMime, nomeArquivo) {
+  const blob = new Blob([conteudo], { type: tipoMime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+function baixarAprovados(formato) {
+  if (!listaAtualId) { alert('Escolha ou crie uma lista primeiro.'); return; }
+  const aprovados = contatos
+    .filter(c => c.status === 'aprovado')
+    .sort((a, b) => a.num - b.num);
+
+  if (aprovados.length === 0) {
+    alert('Nenhum perfil aprovado nesta lista ainda.');
+    return;
+  }
+
+  if (formato === 'txt') {
+    // Um @usuario por linha, sem cabeçalho. Sem BOM, pois não há acentos a tratar.
+    const conteudo = aprovados.map(c => '@' + c.username).join('\r\n');
+    dispararDownload(conteudo, 'text/plain;charset=utf-8', nomeArquivoBase() + '.txt');
+    return;
+  }
+
+  // CSV
+  const cabecalho = ['Usuario', 'Link', 'Aprovado em', 'Enviou no Insta', 'Enviou no WhatsApp', 'Respondeu'];
+  const linhas = aprovados.map(c => [
+    '@' + c.username,
+    'https://www.instagram.com/' + c.username + '/',
+    formatarData(c.aprovadoEm),
+    c.enviouInsta ? 'Sim' : 'Não',
+    c.enviouWhatsapp ? 'Sim' : 'Não',
+    c.respondeu ? 'Sim' : 'Não'
+  ].map(csvCampo).join(';'));
+
+  // BOM (\uFEFF) para o Excel reconhecer acentos; separador ";" para Excel em português.
+  const conteudo = '\uFEFF' + [cabecalho.map(csvCampo).join(';')].concat(linhas).join('\r\n');
+  dispararDownload(conteudo, 'text/csv;charset=utf-8', nomeArquivoBase() + '.csv');
+}
+
 /* ---------- Template e scripts (globais, por dispositivo) ---------- */
 
 function saudacaoAtual() {
@@ -508,13 +580,12 @@ function copiarTexto(texto) {
   return Promise.resolve();
 }
 
-/* ---- Sequência Instagram: 1 clique SEMPRE copia a etapa, abre o Instagram e avança
-   (inclusive o primeiro clique — antes ele só "armava" a etapa 1 sem copiar/abrir nada) ---- */
+/* ---- Sequência Instagram: 1 clique SEMPRE copia a etapa, abre o Instagram e avança ---- */
 function copiarEAbrirIG(id) {
   const c = contatos.find(x => x.id === id);
   if (!c) return;
   const etapaAtual = c.ig_etapa || 0;
-  if (etapaAtual >= 3) return; // já concluída, usar "Reiniciar" pra rodar de novo
+  if (etapaAtual >= 3) return;
   const proximaEtapa = etapaAtual + 1;
   const texto = aplicarPlaceholders(getScripts().ig[proximaEtapa - 1], c);
   copiarTexto(texto);
@@ -537,14 +608,14 @@ function renderScriptIG(c) {
     ${etapa > 0 ? `<div class="script-reset" onclick="resetarIG('${c.id}')">↺ Reiniciar</div>` : ''}</div>`;
 }
 
-/* ---------- Checkboxes do lead: enviei no Insta / enviei no WhatsApp / me respondeu ---------- */
+/* ---------- Checkboxes do lead ---------- */
 
 function toggleEnviouInsta(id) {
   const c = contatos.find(x => x.id === id);
   if (!c) return;
   const novo = !c.enviouInsta;
   const patch = { enviouInsta: novo };
-  if (!novo) patch.enviouWhatsapp = false; // desmarcou insta -> whatsapp volta a ficar bloqueado
+  if (!novo) patch.enviouWhatsapp = false;
   atualizarContato(id, patch);
 }
 
@@ -688,7 +759,13 @@ function verNoInstagram(id) {
 function decidir(id, novoStatus) {
   const patch = { status: novoStatus };
   if (novoStatus === 'aprovado') {
-    Object.assign(patch, { ig_etapa: 0, enviouInsta: false, enviouWhatsapp: false, respondeu: false });
+    Object.assign(patch, {
+      ig_etapa: 0,
+      enviouInsta: false,
+      enviouWhatsapp: false,
+      respondeu: false,
+      aprovadoEm: new Date().toISOString()
+    });
   }
   atualizarContato(id, patch);
   renderPlay();
@@ -717,11 +794,9 @@ function toggleCard(id) {
 function filtrarAprovados() {
   const aprovados = contatos.filter(c => c.status === 'aprovado');
   let base;
-  // Um card aberto (cardsAbertos) nunca some da tela por causa do filtro — só some quando
-  // você fecha o card ou troca de aba/lista. Isso evita o card "sumir" no meio da marcação.
   if (filtroAtual === 'whatsapp') base = aprovados.filter(c => (c.enviouInsta && !c.enviouWhatsapp) || cardsAbertos.has(c.id));
   else if (filtroAtual === 'concluidos') base = aprovados.filter(c => c.enviouWhatsapp || cardsAbertos.has(c.id));
-  else base = aprovados.filter(c => !c.enviouInsta || cardsAbertos.has(c.id)); // 'insta' (padrão): quem acabou de ser aprovado cai aqui
+  else base = aprovados.filter(c => !c.enviouInsta || cardsAbertos.has(c.id));
 
   const termo = buscaAtual.trim().toLowerCase();
   if (termo) base = base.filter(c => c.username.toLowerCase().includes(termo));
