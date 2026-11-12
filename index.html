@@ -140,15 +140,22 @@
   .decision-row { display: flex; flex-direction: column; gap: 8px; }
   .btn-aprovar { background: var(--done); color: #04241a; }
   .btn-offline { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warn); color: var(--warn); }
+  .mode-btn-prosp { background: linear-gradient(135deg, #8b5cf6, #6228d7); color: #fff; padding: 16px; font-size: 15px; }
+  .mode-btn-apenas { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 16px; font-size: 15px; }
 
   .exit-play { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; text-decoration: underline; cursor: pointer; }
   .empty-play { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 
-  /* ---- List / filters ---- */
-  .filters { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+  /* ---- List / filters (colunas com contador acima) ---- */
+  .filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+  .col-head { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+  .col-count { text-align: center; font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
+  .col-count.wa { color: var(--wa); }
+  .col-count.done { color: var(--done); }
   .chip {
-    padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border);
-    font-size: 12px; color: var(--muted); white-space: nowrap; cursor: pointer; background: var(--panel);
+    padding: 8px 6px; border-radius: 10px; border: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); text-align: center; line-height: 1.3;
+    cursor: pointer; background: var(--panel);
   }
   .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .chip.chip-wa { border-color: var(--wa); color: var(--wa); font-weight: 700; }
@@ -296,9 +303,18 @@
       <button class="btn-download" onclick="baixarAprovados('txt')">⬇️ TXT (@usuários)</button>
     </div>
     <div class="filters">
-      <div class="chip active" data-f="insta" onclick="setFiltro('insta')">Enviar no Insta</div>
-      <div class="chip chip-wa" data-f="whatsapp" onclick="setFiltro('whatsapp')">Enviar no WhatsApp</div>
-      <div class="chip chip-done" data-f="concluidos" onclick="setFiltro('concluidos')">Concluídos</div>
+      <div class="col-head">
+        <div class="col-count" id="cntInsta">0</div>
+        <div class="chip active" data-f="insta" onclick="setFiltro('insta')">Enviar no Insta</div>
+      </div>
+      <div class="col-head">
+        <div class="col-count wa" id="cntWhatsapp">0</div>
+        <div class="chip chip-wa" data-f="whatsapp" onclick="setFiltro('whatsapp')">Enviar no WhatsApp</div>
+      </div>
+      <div class="col-head">
+        <div class="col-count done" id="cntConcluidos">0</div>
+        <div class="chip chip-done" data-f="concluidos" onclick="setFiltro('concluidos')">Concluídos</div>
+      </div>
     </div>
     <div id="lista"></div>
 
@@ -343,6 +359,7 @@ let filtroAtual = 'insta';
 let buscaAtual = '';
 let cardsAbertos = new Set();
 let waRefAtual = 'nutri';
+let modoTriagem = 'apenas'; // 'apenas' ou 'prospeccao'
 
 function gerarId() {
   return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id_' + Date.now() + '_' + Math.random().toString(36).slice(2));
@@ -487,7 +504,6 @@ function baixarAprovados(formato) {
   }
 
   if (formato === 'txt') {
-    // Um @usuario por linha, sem cabeçalho. Sem BOM, pois não há acentos a tratar.
     const conteudo = aprovados.map(c => '@' + c.username).join('\r\n');
     dispararDownload(conteudo, 'text/plain;charset=utf-8', nomeArquivoBase() + '.txt');
     return;
@@ -504,7 +520,6 @@ function baixarAprovados(formato) {
     c.respondeu ? 'Sim' : 'Não'
   ].map(csvCampo).join(';'));
 
-  // BOM (\uFEFF) para o Excel reconhecer acentos; separador ";" para Excel em português.
   const conteudo = '\uFEFF' + [cabecalho.map(csvCampo).join(';')].concat(linhas).join('\r\n');
   dispararDownload(conteudo, 'text/csv;charset=utf-8', nomeArquivoBase() + '.csv');
 }
@@ -713,6 +728,24 @@ function proximoPendente() {
 function iniciarPlay() {
   document.getElementById('viewNormal').style.display = 'none';
   document.getElementById('viewPlay').style.display = 'block';
+  renderEscolhaModo();
+}
+
+function renderEscolhaModo() {
+  const view = document.getElementById('viewPlay');
+  view.innerHTML = `
+    <div class="play-card">
+      <div class="play-num">Como quer fazer esta sessão?</div>
+      <div class="decision-row" style="margin-top:14px;">
+        <button class="mode-btn-apenas" onclick="comecarTriagem('apenas')">📋 Apenas triagem</button>
+        <button class="mode-btn-prosp" onclick="comecarTriagem('prospeccao')">🎯 Triagem + prospecção</button>
+      </div>
+    </div>
+    <div class="exit-play" onclick="sairDoPlay()">← Voltar</div>`;
+}
+
+function comecarTriagem(modo) {
+  modoTriagem = modo;
   renderPlay();
 }
 
@@ -729,9 +762,18 @@ function renderPlay() {
   if (!proximo) {
     view.innerHTML = `
       <div class="play-card"><div class="empty-play">🎉 Fila de triagem vazia.<br>Adicione mais perfis pra continuar.</div></div>
-      <div class="exit-play" onclick="sairDoPlay()">← Voltar</div>`;
+      <div class="exit-play" onclick="sairDoPlay()">← Encerrar sessão de triagem</div>`;
     return;
   }
+
+  const prosp = modoTriagem === 'prospeccao';
+
+  const botoesDecisao = prosp ? `
+        <button class="btn-aprovar" onclick="decidir('${proximo.id}', 'prospectei')">✅ Prospectei</button>
+        <button class="btn-offline" onclick="decidir('${proximo.id}', 'excluido')">🚫 Não vou prospectar</button>`
+    : `
+        <button class="btn-aprovar" onclick="decidir('${proximo.id}', 'aprovado')">✅ Vou prospectar</button>
+        <button class="btn-offline" onclick="decidir('${proximo.id}', 'excluido')">🚫 Não vou, excluir</button>`;
 
   view.innerHTML = `
     <div class="quota-box">
@@ -741,10 +783,8 @@ function renderPlay() {
       <div class="play-num">Perfil #${proximo.num}</div>
       <div class="play-username">@${proximo.username}</div>
       <button class="play-ig-btn" onclick="verNoInstagram('${proximo.id}')">👀 Ver perfil no Instagram</button>
-      <div class="decision-label">O que fazer com esse perfil?</div>
-      <div class="decision-row">
-        <button class="btn-aprovar" onclick="decidir('${proximo.id}', 'aprovado')">✅ Vou prospectar</button>
-        <button class="btn-offline" onclick="decidir('${proximo.id}', 'excluido')">🚫 Não vou, excluir</button>
+      <div class="decision-label">${prosp ? 'Depois de ver o perfil, o que fazer?' : 'O que fazer com esse perfil?'}</div>
+      <div class="decision-row">${botoesDecisao}
       </div>
     </div>
     <div class="exit-play" onclick="sairDoPlay()">← Encerrar sessão de triagem</div>`;
@@ -756,18 +796,21 @@ function verNoInstagram(id) {
   abrirInstagram(c.username);
 }
 
-function decidir(id, novoStatus) {
-  const patch = { status: novoStatus };
-  if (novoStatus === 'aprovado') {
-    Object.assign(patch, {
-      ig_etapa: 0,
-      enviouInsta: false,
-      enviouWhatsapp: false,
-      respondeu: false,
-      aprovadoEm: new Date().toISOString()
-    });
+function decidir(id, acao) {
+  if (acao === 'excluido') {
+    atualizarContato(id, { status: 'excluido' });
+    renderPlay();
+    return;
   }
-  atualizarContato(id, patch);
+  // 'aprovado' (apenas triagem) ou 'prospectei' (triagem + prospecção: já enviou a mensagem inicial no Instagram)
+  atualizarContato(id, {
+    status: 'aprovado',
+    ig_etapa: 0,
+    enviouInsta: acao === 'prospectei',
+    enviouWhatsapp: false,
+    respondeu: false,
+    aprovadoEm: new Date().toISOString()
+  });
   renderPlay();
 }
 
@@ -921,6 +964,16 @@ function renderWaRef() {
   }).join('');
 }
 
+function renderContadoresColunas() {
+  const aprovados = contatos.filter(c => c.status === 'aprovado');
+  const insta = aprovados.filter(c => !c.enviouInsta).length;
+  const whats = aprovados.filter(c => c.enviouInsta && !c.enviouWhatsapp).length;
+  const concl = aprovados.filter(c => c.enviouWhatsapp).length;
+  document.getElementById('cntInsta').textContent = insta;
+  document.getElementById('cntWhatsapp').textContent = whats;
+  document.getElementById('cntConcluidos').textContent = concl;
+}
+
 function renderTudo() {
   const pendentes = contatos.filter(c => c.status === 'pendente').length;
   const aprovados = contatos.filter(c => c.status === 'aprovado').length;
@@ -929,6 +982,7 @@ function renderTudo() {
   document.getElementById('btnIniciarPlay').disabled = pendentes === 0;
   document.getElementById('btnIniciarPlay').textContent = pendentes === 0 ? '▶ Nenhum perfil pendente na fila' : '▶ Iniciar triagem (' + pendentes + ' na fila)';
   renderQuota();
+  renderContadoresColunas();
   renderLista();
 }
 
