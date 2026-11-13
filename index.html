@@ -15,6 +15,9 @@ h1{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#fff;margi
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 select,input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit}
 .grow{flex:1;min-width:160px}
+.lote-done{display:flex;align-items:center;gap:6px;font-size:12px;color:#fff;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;cursor:pointer;white-space:nowrap}
+.lote-done input{width:18px;height:18px;accent-color:var(--wa);cursor:pointer}
+.lote-done input:disabled{cursor:not-allowed}
 button{border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;color:#fff;padding:10px 14px}
 button:disabled{opacity:.35;cursor:not-allowed}
 button:active{transform:scale(.97)}
@@ -56,8 +59,10 @@ button:active{transform:scale(.97)}
 
   <div class="toolbar">
     <select id="loteSel" class="grow"></select>
+    <label class="lote-done" title="Marcar este lote como concluído"><input type="checkbox" id="chkLoteOk" disabled> Concluído</label>
     <input type="text" id="busca" class="grow" placeholder="🔎 Buscar @">
     <button class="btn-ghost" id="btnSync">🔄 Sincronizar</button>
+    <button class="btn-danger" id="btnApagarLote" disabled>🗑 Apagar lote</button>
   </div>
 
   <div class="actionbar">
@@ -147,6 +152,7 @@ function render(){
   renderColuna('l2', cols[2], 2);
   renderColuna('l3', cols[3], 3);
   atualizarSelecao();
+  atualizarBotaoLote();
   document.getElementById('btnDesfazer').disabled = state.historico.length === 0;
 }
 
@@ -186,14 +192,92 @@ function atualizarSelecao(){
   document.getElementById('btnFluxo').disabled = n === 0;
 }
 
+// Marcacao de lote concluido: fica como evento com username "__lote__".
+function estaConcluido(lote){
+  const evs = state.eventos
+    .filter(e => e.username === '__lote__' && e.lote === lote)
+    .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
+  return evs.length > 0 && evs[evs.length - 1].acao === 'lote_concluido';
+}
+
+async function alternarLote(marcar){
+  const lote = document.getElementById('loteSel').value;
+  const chk = document.getElementById('chkLoteOk');
+  if(lote === 'todos') return;
+  try{
+    await registrar('__lote__', lote, marcar ? 'lote_concluido' : 'lote_aberto');
+    atualizarLotes();
+    render();
+  }catch(err){
+    chk.checked = !marcar;
+    alert('Não consegui salvar: ' + err.message);
+  }
+}
+
+// Só permite apagar um lote específico que ainda não foi enviado ao fluxo.
+function atualizarBotaoLote(){
+  const lote = document.getElementById('loteSel').value;
+  const chk = document.getElementById('chkLoteOk');
+  chk.disabled = lote === 'todos';
+  chk.checked = lote !== 'todos' && estaConcluido(lote);
+  const btn = document.getElementById('btnApagarLote');
+  if(lote === 'todos'){ btn.disabled = true; btn.title = 'Escolha um lote específico'; return; }
+  const enviado = state.extraidos.some(e => e.lote === lote && statusDe(e.username, e.lote) === 'enviado_fluxo');
+  btn.disabled = enviado;
+  btn.title = enviado ? 'Este lote tem contatos já enviados ao fluxo e não pode ser apagado' : 'Apagar este lote';
+}
+
+function abrirModalApagar(passo){
+  const lote = document.getElementById('loteSel').value;
+  const qtd = state.extraidos.filter(e => e.lote === lote).length;
+  const box = document.getElementById('modalBox');
+  if(passo === 1){
+    box.innerHTML = '<h2>Apagar o lote ' + escapeHtml(lote) + '?</h2>' +
+      '<p>Vão sair ' + qtd + ' contato(s) deste lote e todo o histórico deles no app.</p>' +
+      '<div class="row"><button class="btn-ghost" id="mCancel">Cancelar</button><button class="btn-primary" id="mNext">Continuar</button></div>';
+    document.getElementById('mNext').onclick = () => abrirModalApagar(2);
+  } else {
+    box.innerHTML = '<h2>Tem certeza?</h2>' +
+      '<p>Essa ação não pode ser desfeita. Os perfis continuam na base de prospecção, então não voltam a ser extraídos.</p>' +
+      '<div class="row"><button class="btn-ghost" id="mCancel">Cancelar</button><button class="btn-danger" id="mOk">Apagar lote</button></div>';
+    document.getElementById('mOk').onclick = apagarLote;
+  }
+  document.getElementById('mCancel').onclick = fecharModal;
+  document.getElementById('modal').classList.add('show');
+}
+
+async function apagarLote(){
+  fecharModal();
+  const lote = document.getElementById('loteSel').value;
+  if(lote === 'todos') return;
+  try{
+    const r = await fetch(API + '/app-apagar-lote', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ lote: lote })
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    state.extraidos = state.extraidos.filter(e => e.lote !== lote);
+    state.eventos = state.eventos.filter(e => e.lote !== lote);
+    state.historico = state.historico.filter(h => h.l !== lote);
+    [...state.selecionados].forEach(k => { if(k.endsWith('|' + lote)) state.selecionados.delete(k); });
+    atualizarLotes();
+    render();
+    alert('Lote ' + lote + ' apagado.');
+  }catch(err){
+    alert('Não consegui apagar o lote: ' + err.message);
+  }
+}
+
 function atualizarLotes(){
   const sel = document.getElementById('loteSel');
   const atual = sel.value;
   const lotes = lotesOrdenados();
   sel.innerHTML = '<option value="todos">Todos os lotes</option>' +
-    lotes.map(l => '<option value="' + escapeHtml(l.lote) + '">' + escapeHtml(l.lote) + ' · ' + l.count + ' · ' + dataBr(l.data) + '</option>').join('');
+    lotes.map(l => '<option value="' + escapeHtml(l.lote) + '">' + (estaConcluido(l.lote) ? '✅ ' : '') + escapeHtml(l.lote) + ' · ' + l.count + ' · ' + dataBr(l.data) + '</option>').join('');
   if(atual && (atual === 'todos' || lotes.some(l => l.lote === atual))) sel.value = atual;
   else if(lotes.length) sel.value = lotes[0].lote;
+  atualizarBotaoLote();
 }
 
 /* ---------- comunicação com o n8n ---------- */
@@ -336,6 +420,8 @@ function abrirIG(u){
 document.getElementById('loteSel').addEventListener('change', render);
 document.getElementById('busca').addEventListener('input', render);
 document.getElementById('btnSync').addEventListener('click', sincronizar);
+document.getElementById('btnApagarLote').addEventListener('click', () => abrirModalApagar(1));
+document.getElementById('chkLoteOk').addEventListener('change', e => alternarLote(e.target.checked));
 document.getElementById('btnSelTodos').addEventListener('click', selecionarTodos);
 document.getElementById('btnLimpar').addEventListener('click', limparSelecao);
 document.getElementById('btnDesfazer').addEventListener('click', desfazer);
