@@ -10,8 +10,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter",system-ui,sans-serif;padding:16px 12px 60px}
 .wrap{max-width:1200px;margin:0 auto}
-h1{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:600}
-.status{font-size:12px;color:var(--muted);margin-bottom:14px}
+h1{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#fff;margin:0 0 4px;font-weight:600}
+.status{font-size:12px;color:#fff;margin-bottom:14px}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 select,input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit}
 .grow{flex:1;min-width:160px}
@@ -26,10 +26,12 @@ button:active{transform:scale(.97)}
 .actionbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
 .board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
 @media(max-width:900px){.board{grid-template-columns:1fr}}
-.col{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;min-height:120px}
-.col-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;padding:4px 4px 10px}
+.col{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;min-height:120px;transition:background .15s,border-color .15s}
+.col.over{border-color:var(--accent);background:#1d1830}
+.col-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff;padding:4px 4px 10px}
 .count{background:var(--panel2);border-radius:20px;padding:2px 9px;font-size:12px}
-.card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+.card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;cursor:grab}
+.card.dragging{opacity:.4}
 .card-user{font-weight:700;font-size:14px;word-break:break-all}
 .card-meta{font-size:11px;color:var(--muted);margin-top:4px}
 .card-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
@@ -61,20 +63,21 @@ button:active{transform:scale(.97)}
   <div class="actionbar">
     <button class="btn-ghost" id="btnSelTodos">☑️ Selecionar todos (coluna 2)</button>
     <button class="btn-ghost" id="btnLimpar">Limpar seleção</button>
-    <span id="selInfo" style="font-size:12px;color:var(--muted)"></span>
+    <button class="btn-ghost" id="btnDesfazer" disabled>↶ Desfazer</button>
+    <span id="selInfo" style="font-size:12px;color:#fff"></span>
     <button class="btn-primary" id="btnFluxo" disabled style="margin-left:auto">📤 Enviar selecionados para o fluxo</button>
   </div>
 
   <div class="board">
-    <div class="col">
+    <div class="col" data-col="1">
       <div class="col-head">Enviar no Insta <span class="count" id="c1">0</span></div>
       <div id="l1"></div>
     </div>
-    <div class="col">
+    <div class="col" data-col="2">
       <div class="col-head">Enviar no WhatsApp / n8n / e-mail <span class="count" id="c2">0</span></div>
       <div id="l2"></div>
     </div>
-    <div class="col">
+    <div class="col" data-col="3">
       <div class="col-head">Concluídos <span class="count" id="c3">0</span></div>
       <div id="l3"></div>
     </div>
@@ -86,7 +89,7 @@ button:active{transform:scale(.97)}
 <script>
 const API = 'https://n8n.iaatende.click/webhook';
 const FLUXO = API + '/prospeccao-novos';
-const state = { extraidos: [], eventos: [], selecionados: new Set() };
+const state = { extraidos: [], eventos: [], selecionados: new Set(), historico: [] };
 
 /* ---------- utilitários ---------- */
 function chave(u, l){ return u + '|' + l; }
@@ -95,14 +98,19 @@ function numLote(l){ const m = /-\s*(\d+)$/.exec(l || ''); return m ? parseInt(m
 function dataBr(iso){ const p = String(iso || '').slice(0,10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
 
 /* ---------- regras de status ---------- */
-// Sem nenhum evento = extraido (coluna 1). Ultimo evento "insta_enviado" = coluna 2.
-// Qualquer outro evento ("respondeu", "enviado_fluxo", "descartado") = coluna 3.
+// Sem evento, ou ultimo evento "desfeito" = coluna 1.
+// Ultimo evento "insta_enviado" = coluna 2.
+// Qualquer outro ("respondeu", "enviado_fluxo", "descartado") = coluna 3.
 function statusDe(u, l){
   const evs = state.eventos.filter(e => e.username === u && e.lote === l)
     .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
   return evs.length ? evs[evs.length - 1].acao : null;
 }
-function colunaDe(acao){ if(!acao) return 1; if(acao === 'insta_enviado') return 2; return 3; }
+function colunaDe(acao){
+  if(!acao || acao === 'desfeito') return 1;
+  if(acao === 'insta_enviado') return 2;
+  return 3;
+}
 
 function lotesOrdenados(){
   const mapa = {};
@@ -139,6 +147,7 @@ function render(){
   renderColuna('l2', cols[2], 2);
   renderColuna('l3', cols[3], 3);
   atualizarSelecao();
+  document.getElementById('btnDesfazer').disabled = state.historico.length === 0;
 }
 
 function renderColuna(id, lista, n){
@@ -161,7 +170,8 @@ function renderColuna(id, lista, n){
       const rotulos = {respondeu:'💬 Respondeu', enviado_fluxo:'📤 Enviado ao fluxo', descartado:'🚫 Descartado'};
       acoes = '<span class="tag">' + (rotulos[acao] || escapeHtml(acao)) + '</span>' + ig;
     }
-    return '<div class="card"><div class="card-user">@' + u + '</div>' + nome +
+    return '<div class="card" draggable="true" data-u="' + u + '" data-l="' + lt + '">' +
+      '<div class="card-user">@' + u + '</div>' + nome +
       '<div class="card-meta">Lote ' + lt + '</div><div class="card-btns">' + acoes + '</div></div>';
   }).join('');
 }
@@ -214,15 +224,47 @@ async function registrar(u, l, acao){
   state.eventos.push({ username: u, lote: l, acao: acao, data_hora: new Date().toISOString() });
 }
 
-async function marcarInsta(u, l){
-  try{ await registrar(u, l, 'insta_enviado'); render(); }
+// Registra a acao e guarda o estado anterior para poder desfazer.
+async function aplicarAcao(u, l, acao){
+  const anterior = statusDe(u, l) || 'desfeito';
+  await registrar(u, l, acao);
+  state.historico.push({ u: u, l: l, anterior: anterior });
+  if(state.historico.length > 50) state.historico.shift();
+}
+
+async function desfazer(){
+  const it = state.historico.pop();
+  if(!it) return;
+  try{
+    await registrar(it.u, it.l, it.anterior);
+    render();
+  }catch(err){
+    state.historico.push(it);
+    alert('Não consegui desfazer: ' + err.message);
+  }
+}
+
+async function acaoComErro(fn){
+  try{ await fn(); render(); }
   catch(err){ alert('Não consegui salvar: ' + err.message); }
 }
 
-async function marcarRespondeu(u, l){
+function marcarInsta(u, l){ return acaoComErro(() => aplicarAcao(u, l, 'insta_enviado')); }
+
+function marcarRespondeu(u, l){
   state.selecionados.delete(chave(u, l));
-  try{ await registrar(u, l, 'respondeu'); render(); }
-  catch(err){ alert('Não consegui salvar: ' + err.message); }
+  return acaoComErro(() => aplicarAcao(u, l, 'respondeu'));
+}
+
+/* ---------- arrastar entre colunas ---------- */
+const ACAO_POR_COLUNA = {1: 'desfeito', 2: 'insta_enviado', 3: 'respondeu'};
+
+function moverPorArrasto(u, l, coluna){
+  const atual = colunaDe(statusDe(u, l));
+  if(atual === coluna) return;
+  if(coluna === 2) state.selecionados.delete(chave(u, l));
+  // "desfeito" e um evento interno: a coluna 1 volta a ser o estado inicial.
+  return acaoComErro(() => aplicarAcao(u, l, ACAO_POR_COLUNA[coluna]));
 }
 
 /* ---------- seleção ---------- */
@@ -275,7 +317,7 @@ async function enviarFluxo(){
       body: JSON.stringify({ profiles: pares.map(p => ({ username: p.username })) })
     });
     if(!r.ok) throw new Error('fluxo HTTP ' + r.status);
-    for(const p of pares){ await registrar(p.username, p.lote, 'enviado_fluxo'); }
+    for(const p of pares){ await aplicarAcao(p.username, p.lote, 'enviado_fluxo'); }
     state.selecionados.clear();
     render();
     alert(pares.length + ' contato(s) enviados ao fluxo.');
@@ -296,20 +338,59 @@ document.getElementById('busca').addEventListener('input', render);
 document.getElementById('btnSync').addEventListener('click', sincronizar);
 document.getElementById('btnSelTodos').addEventListener('click', selecionarTodos);
 document.getElementById('btnLimpar').addEventListener('click', limparSelecao);
+document.getElementById('btnDesfazer').addEventListener('click', desfazer);
 document.getElementById('btnFluxo').addEventListener('click', () => abrirModal(1));
 document.getElementById('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
 
-// Delegação de cliques nos cards
-document.querySelector('.board').addEventListener('click', e => {
+const board = document.querySelector('.board');
+
+board.addEventListener('click', e => {
   const b = e.target.closest('button');
-  if(b){
-    if(b.dataset.abrir) return abrirIG(b.dataset.abrir);
-    if(b.dataset.insta) return marcarInsta(b.dataset.insta, b.dataset.lote);
-    if(b.dataset.resp) return marcarRespondeu(b.dataset.resp, b.dataset.lote);
-  }
+  if(!b) return;
+  if(b.dataset.abrir) return abrirIG(b.dataset.abrir);
+  if(b.dataset.insta) return marcarInsta(b.dataset.insta, b.dataset.lote);
+  if(b.dataset.resp) return marcarRespondeu(b.dataset.resp, b.dataset.lote);
 });
-document.querySelector('.board').addEventListener('change', e => {
+
+board.addEventListener('change', e => {
   if(e.target.dataset.sel) toggleSel(e.target.dataset.sel);
+});
+
+board.addEventListener('dragstart', e => {
+  const card = e.target.closest('.card');
+  if(!card) return;
+  e.dataTransfer.setData('text/plain', card.dataset.u + '|' + card.dataset.l);
+  e.dataTransfer.effectAllowed = 'move';
+  card.classList.add('dragging');
+});
+
+board.addEventListener('dragend', e => {
+  const card = e.target.closest('.card');
+  if(card) card.classList.remove('dragging');
+  document.querySelectorAll('.col.over').forEach(c => c.classList.remove('over'));
+});
+
+board.addEventListener('dragover', e => {
+  const col = e.target.closest('.col');
+  if(!col) return;
+  e.preventDefault();
+  col.classList.add('over');
+});
+
+board.addEventListener('dragleave', e => {
+  const col = e.target.closest('.col');
+  if(col && !col.contains(e.relatedTarget)) col.classList.remove('over');
+});
+
+board.addEventListener('drop', e => {
+  const col = e.target.closest('.col');
+  if(!col) return;
+  e.preventDefault();
+  col.classList.remove('over');
+  const dados = e.dataTransfer.getData('text/plain');
+  const i = dados.indexOf('|');
+  if(i < 0) return;
+  moverPorArrasto(dados.slice(0, i), dados.slice(i + 1), Number(col.dataset.col));
 });
 
 sincronizar();
