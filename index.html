@@ -2,1028 +2,317 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prospecção</title>
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0d10">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" href="icon-192.png">
 <style>
-  :root {
-    --bg: #0b0d10;
-    --panel: #14171b;
-    --panel2: #1b1f24;
-    --border: #232830;
-    --text: #e8eaed;
-    --muted: #eef0f2;
-    --accent: #8b5cf6;
-    --ig-grad: linear-gradient(135deg, #f9ce34, #ee2a7b 45%, #6228d7);
-    --wa: #22c55e;
-    --done: #2dd4a7;
-    --danger: #ef4444;
-    --warn: #f59e0b;
-  }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, "Inter", system-ui, sans-serif;
-    padding: 20px 14px 60px;
-  }
-  .wrap { max-width: 480px; margin: 0 auto; }
-  h1 {
-    font-size: 13px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0 0 2px;
-    font-weight: 600;
-  }
-  .count { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
-  .count b { color: var(--text); }
-
-  details {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 16px;
-    overflow: hidden;
-  }
-  summary {
-    padding: 13px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    cursor: pointer;
-    list-style: none;
-  }
-  summary::-webkit-details-marker { display: none; }
-  summary::after { content: '＋'; float: right; color: var(--muted); }
-  details[open] summary::after { content: '－'; }
-  .panel-body { padding: 0 16px 16px; }
-
-  textarea, input[type=text], input[type=tel], select {
-    width: 100%;
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: inherit;
-  }
-  textarea { min-height: 100px; resize: vertical; }
-  .hint-small { font-size: 11px; color: var(--muted); margin: 8px 0 12px; line-height: 1.5; }
-  button {
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 13px;
-    color: #fff;
-    padding: 11px 14px;
-  }
-  button:active { transform: scale(0.97); }
-  button:disabled { opacity: 0.3; cursor: not-allowed; }
-  .btn-primary { background: var(--accent); width: 100%; }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 100%; }
-  .btn-download { background: transparent; border: 1px solid var(--done); color: var(--done); width: 100%; }
-  .download-row { display: flex; gap: 8px; margin-bottom: 12px; }
-  .download-row button { flex: 1; }
-
-  /* ---- Listas ---- */
-  .field-label { font-size: 11px; color: var(--muted); margin: 10px 0 4px; display: block; }
-  .lista-row { display: flex; gap: 8px; margin-bottom: 8px; }
-  .lista-row select { flex: 1; }
-  .nova-lista-row { display: flex; gap: 8px; }
-  .nova-lista-row input { flex: 1; }
-  .nova-lista-row button { white-space: nowrap; }
-
-  /* ---- CSV upload ---- */
-  .csv-row {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--panel2); border: 1px dashed var(--border);
-    border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;
-  }
-  .csv-row input[type="file"] { flex: 1; font-size: 12px; color: var(--muted); }
-
-  /* ---- Quota bar ---- */
-  .quota-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
-  .quota-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-  .quota-top b { color: var(--text); font-size: 13px; }
-  .quota-track { height: 6px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
-  .quota-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
-  .quota-fill.cheio { background: var(--danger); }
-
-  /* ---- Play button ---- */
-  .play-btn {
-    width: 100%; padding: 16px; border-radius: 12px;
-    background: linear-gradient(135deg, #8b5cf6, #6228d7);
-    font-size: 15px; margin-bottom: 14px;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-
-  /* ---- Busca ---- */
-  .search-box { margin-bottom: 18px; }
-  .search-box input { font-size: 14px; }
-
-  /* ---- Play mode card ---- */
-  .play-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px 18px; text-align: center; margin-bottom: 16px; }
-  .play-num { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
-  .play-username { font-size: 22px; font-weight: 700; margin-bottom: 18px; word-break: break-all; }
-  .play-ig-btn { width: 100%; padding: 15px; border-radius: 10px; background: var(--ig-grad); font-size: 15px; margin-bottom: 16px; }
-  .decision-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-  .decision-row { display: flex; flex-direction: column; gap: 8px; }
-  .btn-aprovar { background: var(--done); color: #04241a; }
-  .btn-offline { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warn); color: var(--warn); }
-  .mode-btn-prosp { background: linear-gradient(135deg, #8b5cf6, #6228d7); color: #fff; padding: 16px; font-size: 15px; }
-  .mode-btn-apenas { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 16px; font-size: 15px; }
-
-  .exit-play { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; text-decoration: underline; cursor: pointer; }
-  .empty-play { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; line-height: 1.6; }
-
-  /* ---- List / filters (colunas com contador acima) ---- */
-  .filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
-  .col-head { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
-  .col-count { text-align: center; font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
-  .col-count.wa { color: var(--wa); }
-  .col-count.done { color: var(--done); }
-  .chip {
-    padding: 8px 6px; border-radius: 10px; border: 1px solid var(--border);
-    font-size: 12px; color: var(--muted); text-align: center; line-height: 1.3;
-    cursor: pointer; background: var(--panel);
-  }
-  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .chip.chip-wa { border-color: var(--wa); color: var(--wa); font-weight: 700; }
-  .chip.chip-wa.active { background: var(--wa); color: #04241a; border-color: var(--wa); }
-  .chip.chip-done { border-color: var(--done); color: var(--done); font-weight: 700; }
-  .chip.chip-done.active { background: var(--done); color: #04241a; border-color: var(--done); }
-
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
-  .card.respondeu { border-color: var(--wa); background: linear-gradient(180deg, rgba(34,197,94,0.10), var(--panel) 55%); }
-  .card.concluido-wa { opacity: 0.55; }
-  .card-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; }
-  .num { width: 24px; height: 24px; border-radius: 6px; background: var(--panel2); color: var(--muted); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .card-header-info { flex: 1; min-width: 0; }
-  .card-header-nome { font-size: 14px; font-weight: 600; word-break: break-all; }
-  .card-header-user { font-size: 12px; color: var(--muted); }
-  .card.respondeu .card-header-user { color: var(--wa); font-weight: 700; }
-  .chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; }
-  .del { color: var(--muted); font-size: 18px; line-height: 1; padding: 4px 6px; cursor: pointer; flex-shrink: 0; }
-  .card-body { padding: 0 14px 14px; }
-
-  .actions { display: flex; gap: 8px; margin-bottom: 10px; }
-  .actions button { flex: 1; padding: 9px; font-size: 12.5px; }
-  .btn-ig { background: var(--ig-grad); }
-  .btn-wa { background: var(--wa); }
-
-  /* ---- Checkboxes do lead ---- */
-  .lead-checks { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
-  .check-row {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 11px 12px; font-size: 13px; cursor: pointer; user-select: none;
-  }
-  .check-row input[type=checkbox] { width: 19px; height: 19px; accent-color: var(--accent); flex-shrink: 0; }
-  .check-row.checked { border-color: var(--accent); }
-  .check-row.disabled { opacity: 0.35; cursor: not-allowed; }
-  .check-row.respondeu input[type=checkbox] { accent-color: var(--wa); }
-  .check-row.respondeu.checked { border-color: var(--wa); background: rgba(34,197,94,0.12); color: var(--wa); font-weight: 700; }
-
-  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0; }
-  .section-label { font-size: 12px; color: var(--muted); margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.08em; }
-
-  /* ---- Scripts de resposta (sequência) ---- */
-  .script-block { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
-  .script-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-  .script-title span.badge { background: var(--accent); color: #fff; border-radius: 20px; padding: 2px 8px; font-size: 10px; text-transform: none; letter-spacing: 0; }
-  .script-title span.badge.done { background: var(--done); color: #04241a; }
-  .script-reset { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; text-decoration: underline; cursor: pointer; }
-
-  /* ---- Referência rápida WhatsApp (Nutri / Secretária) ---- */
-  .waref-tabs { display: flex; gap: 8px; margin: 12px 0 14px; }
-  .waref-tab {
-    flex: 1; padding: 14px 6px; border-radius: 14px; border: 1px solid var(--border);
-    background: var(--panel); color: var(--muted); font-weight: 700; font-size: 12px;
-    text-align: center; cursor: pointer; line-height: 1.3;
-  }
-  .waref-tab.active { background: var(--wa); color: #04241a; border-color: var(--wa); }
-  .waref-block { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-  .waref-etapa-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-  .waref-msg { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.55; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
-  .waref-copybtn { width: 100%; background: var(--wa); color: #04241a; padding: 13px; }
+:root{--bg:#0b0d10;--panel:#14171b;--panel2:#1b1f24;--border:#232830;--text:#e8eaed;--muted:#9aa0a6;--accent:#8b5cf6;--ig:linear-gradient(135deg,#f9ce34,#ee2a7b 45%,#6228d7);--wa:#22c55e;--done:#2dd4a7;--danger:#ef4444;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter",system-ui,sans-serif;padding:16px 12px 60px}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:600}
+.status{font-size:12px;color:var(--muted);margin-bottom:14px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+select,input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit}
+.grow{flex:1;min-width:160px}
+button{border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;color:#fff;padding:10px 14px}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:active{transform:scale(.97)}
+.btn-primary{background:var(--accent)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ig{background:var(--ig)}
+.btn-ok{background:var(--done);color:#04241a}
+.btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.actionbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+@media(max-width:900px){.board{grid-template-columns:1fr}}
+.col{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;min-height:120px}
+.col-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;padding:4px 4px 10px}
+.count{background:var(--panel2);border-radius:20px;padding:2px 9px;font-size:12px}
+.card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+.card-user{font-weight:700;font-size:14px;word-break:break-all}
+.card-meta{font-size:11px;color:var(--muted);margin-top:4px}
+.card-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.card-btns button{padding:7px 9px;font-size:12px;flex:1;min-width:110px}
+.sel-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:6px 8px;background:var(--panel);border:1px solid var(--border);border-radius:8px;flex:1;min-width:110px}
+.check{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.tag{font-size:11px;border-radius:20px;padding:4px 10px;background:var(--panel);color:var(--muted);white-space:nowrap}
+.empty{font-size:12px;color:var(--muted);text-align:center;padding:20px 6px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:380px;width:100%}
+.modal h2{font-size:15px;margin:0 0 8px}
+.modal p{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px}
+.modal .row{display:flex;gap:8px}
+.modal .row button{flex:1}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Prospecção</h1>
-  <div class="count" id="topCount">0 perfis</div>
-  <button id="btnInstalar" class="btn-ghost" style="display:none; border-color:var(--accent); color:var(--accent); margin-bottom:16px;" onclick="instalarApp()">⬇️ Instalar app no celular</button>
+  <div class="status" id="status">Carregando…</div>
 
-  <div id="viewNormal">
-    <details open id="listaBox">
-      <summary>Lista atual</summary>
-      <div class="panel-body">
-        <div class="lista-row">
-          <select id="seletorLista" onchange="trocarLista(this.value)"><option>—</option></select>
-          <button class="btn-ghost" style="width:auto;" onclick="apagarListaAtual()">🗑</button>
-        </div>
-        <label class="field-label">Criar nova lista</label>
-        <div class="nova-lista-row">
-          <input type="text" id="nomeNovaLista" placeholder="Ex: Lote julho - nutricionistas SP">
-          <button class="btn-primary" style="width:auto;" onclick="criarNovaLista()">+ Criar</button>
-        </div>
-        <p class="hint-small">Tudo fica salvo só neste celular (não sincroniza com outro aparelho).</p>
-      </div>
-    </details>
-
-    <details id="importBox">
-      <summary>Adicionar perfis à fila desta lista</summary>
-      <div class="panel-body">
-        <div class="csv-row">
-          <input type="file" id="csvFile" accept=".csv,.txt" onchange="handleCsvUpload(event)">
-        </div>
-        <p class="hint-small">Suba um .csv com a coluna <b>instagram</b> (outras colunas, se houver, são ignoradas) — cabeçalho é ignorado automaticamente. O conteúdo cai na caixa abaixo pra você revisar antes de confirmar.</p>
-        <textarea id="bulkInput" placeholder="Cole 1 perfil por linha:&#10;instagram.com/nutri.joana&#10;@nutri.carla&#10;dr.paulo"></textarea>
-        <p class="hint-small">1 perfil por linha: pode ser URL do Instagram ou só o @.</p>
-        <button class="btn-primary" onclick="adicionarLote()">Adicionar à fila</button>
-      </div>
-    </details>
-
-    <div class="quota-box">
-      <div class="quota-top"><span>Abordagens a fazer</span><b id="quotaTexto">0</b></div>
-    </div>
-
-    <details>
-      <summary>Modelo de mensagem</summary>
-      <div class="panel-body">
-        <textarea id="templateInput" style="min-height:70px;"></textarea>
-        <p class="hint-small">Use <b>{saudacao}</b> pra saudação automática. Vale pra todas as listas.</p>
-        <button class="btn-primary" onclick="salvarTemplate()">Salvar modelo</button>
-      </div>
-    </details>
-
-    <details>
-      <summary>Scripts de resposta (sequências de 3 etapas)</summary>
-      <div class="panel-body">
-        <p class="hint-small">Cada script tem 3 etapas. A sequência do Instagram aparece dentro do card de cada lead. As sequências de WhatsApp (Nutricionista/Secretária) aparecem na referência rápida lá embaixo, abaixo de "Esvaziar esta lista".</p>
-
-        <p class="section-label" style="margin:14px 0 6px;">Instagram (sequência de 3)</p>
-        <textarea id="scriptIg1" placeholder="Etapa 1"></textarea>
-        <textarea id="scriptIg2" placeholder="Etapa 2" style="margin-top:6px;"></textarea>
-        <textarea id="scriptIg3" placeholder="Etapa 3" style="margin-top:6px;"></textarea>
-
-        <p class="section-label" style="margin:14px 0 6px;">WhatsApp — respondeu a Nutricionista</p>
-        <textarea id="scriptWaNutri1" placeholder="Etapa 1"></textarea>
-        <textarea id="scriptWaNutri2" placeholder="Etapa 2" style="margin-top:6px;"></textarea>
-        <textarea id="scriptWaNutri3" placeholder="Etapa 3" style="margin-top:6px;"></textarea>
-
-        <p class="section-label" style="margin:14px 0 6px;">WhatsApp — respondeu a Secretária</p>
-        <textarea id="scriptWaSec1" placeholder="Etapa 1"></textarea>
-        <textarea id="scriptWaSec2" placeholder="Etapa 2" style="margin-top:6px;"></textarea>
-        <textarea id="scriptWaSec3" placeholder="Etapa 3" style="margin-top:6px;"></textarea>
-
-        <button class="btn-primary" style="margin-top:12px;" onclick="salvarScripts()">Salvar scripts</button>
-      </div>
-    </details>
-
-    <button class="play-btn" onclick="iniciarPlay()" id="btnIniciarPlay">▶ Iniciar triagem</button>
-
-    <div class="search-box">
-      <input type="text" id="buscaInput" placeholder="🔎 Buscar por @" oninput="buscaAtual = this.value; renderLista();">
-    </div>
-
-    <div class="section-label">Aprovados para abordagem</div>
-    <div class="download-row">
-      <button class="btn-download" onclick="baixarAprovados('csv')">⬇️ CSV</button>
-      <button class="btn-download" onclick="baixarAprovados('txt')">⬇️ TXT (@usuários)</button>
-    </div>
-    <div class="filters">
-      <div class="col-head">
-        <div class="col-count" id="cntInsta">0</div>
-        <div class="chip active" data-f="insta" onclick="setFiltro('insta')">Enviar no Insta</div>
-      </div>
-      <div class="col-head">
-        <div class="col-count wa" id="cntWhatsapp">0</div>
-        <div class="chip chip-wa" data-f="whatsapp" onclick="setFiltro('whatsapp')">Enviar no WhatsApp</div>
-      </div>
-      <div class="col-head">
-        <div class="col-count done" id="cntConcluidos">0</div>
-        <div class="chip chip-done" data-f="concluidos" onclick="setFiltro('concluidos')">Concluídos</div>
-      </div>
-    </div>
-    <div id="lista"></div>
-
-    <details style="margin-top:18px;">
-      <summary>Descartados (excluídos)</summary>
-      <div class="panel-body" id="listaDescartados"></div>
-    </details>
-
-    <div style="margin-top:18px;">
-      <button class="btn-ghost" onclick="limparListaAtual()">Esvaziar esta lista (apaga os contatos)</button>
-    </div>
-
-    <div class="section-label" style="margin-top:26px;">Sequência WhatsApp — referência rápida</div>
-    <p class="hint-small" style="margin-top:-4px;">Escolha quem respondeu e copie as etapas em sequência, sem precisar abrir o card do lead.</p>
-    <div class="waref-tabs">
-      <div class="waref-tab active" data-w="nutri" onclick="setWaRef('nutri')">👩‍⚕️ Ela é a Nutricionista</div>
-      <div class="waref-tab" data-w="secretaria" onclick="setWaRef('secretaria')">🗂 Ela é a Secretária</div>
-      <div class="waref-tab" data-w="ig" onclick="setWaRef('ig')">📸 Sequência Instagram</div>
-    </div>
-    <div id="waRefBox"></div>
+  <div class="toolbar">
+    <select id="loteSel" class="grow"></select>
+    <input type="text" id="busca" class="grow" placeholder="🔎 Buscar @">
+    <button class="btn-ghost" id="btnSync">🔄 Sincronizar</button>
   </div>
 
-  <div id="viewPlay" style="display:none;"></div>
+  <div class="actionbar">
+    <button class="btn-ghost" id="btnSelTodos">☑️ Selecionar todos (coluna 2)</button>
+    <button class="btn-ghost" id="btnLimpar">Limpar seleção</button>
+    <span id="selInfo" style="font-size:12px;color:var(--muted)"></span>
+    <button class="btn-primary" id="btnFluxo" disabled style="margin-left:auto">📤 Enviar selecionados para o fluxo</button>
+  </div>
+
+  <div class="board">
+    <div class="col">
+      <div class="col-head">Enviar no Insta <span class="count" id="c1">0</span></div>
+      <div id="l1"></div>
+    </div>
+    <div class="col">
+      <div class="col-head">Enviar no WhatsApp / n8n / e-mail <span class="count" id="c2">0</span></div>
+      <div id="l2"></div>
+    </div>
+    <div class="col">
+      <div class="col-head">Concluídos <span class="count" id="c3">0</span></div>
+      <div id="l3"></div>
+    </div>
+  </div>
 </div>
 
+<div class="modal-bg" id="modal"><div class="modal" id="modalBox"></div></div>
+
 <script>
-const TEMPLATE_KEY = 'prospeccao_template_msg';
-const SCRIPTS_KEY = 'prospeccao_scripts_v1';
-const LISTAS_KEY = 'prospeccao_listas_v1';
-const LISTA_ATUAL_KEY = 'prospeccao_lista_atual';
-const TEMPLATE_PADRAO = 'Olá! Tudo bem? {saudacao} ☺️';
+const API = 'https://n8n.iaatende.click/webhook';
+const FLUXO = API + '/prospeccao-novos';
+const state = { extraidos: [], eventos: [], selecionados: new Set() };
 
-const SCRIPTS_PADRAO = {
-  ig: ['Etapa 1 do script de Instagram (edite em "Scripts de resposta")', 'Etapa 2...', 'Etapa 3...'],
-  waNutri: ['Etapa 1 — respondeu a nutricionista', 'Etapa 2...', 'Etapa 3...'],
-  waSec: ['Etapa 1 — respondeu a secretária', 'Etapa 2...', 'Etapa 3...']
-};
+/* ---------- utilitários ---------- */
+function chave(u, l){ return u + '|' + l; }
+function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function numLote(l){ const m = /-\s*(\d+)$/.exec(l || ''); return m ? parseInt(m[1], 10) : 0; }
+function dataBr(iso){ const p = String(iso || '').slice(0,10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
 
-let listaAtualId = localStorage.getItem(LISTA_ATUAL_KEY) || null;
-let contatos = [];
-let filtroAtual = 'insta';
-let buscaAtual = '';
-let cardsAbertos = new Set();
-let waRefAtual = 'nutri';
-let modoTriagem = 'apenas'; // 'apenas' ou 'prospeccao'
-
-function gerarId() {
-  return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+/* ---------- regras de status ---------- */
+// Sem nenhum evento = extraido (coluna 1). Ultimo evento "insta_enviado" = coluna 2.
+// Qualquer outro evento ("respondeu", "enviado_fluxo", "descartado") = coluna 3.
+function statusDe(u, l){
+  const evs = state.eventos.filter(e => e.username === u && e.lote === l)
+    .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
+  return evs.length ? evs[evs.length - 1].acao : null;
 }
+function colunaDe(acao){ if(!acao) return 1; if(acao === 'insta_enviado') return 2; return 3; }
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-/* ---------- Listas (localStorage) ---------- */
-
-function carregarListasArray() { return JSON.parse(localStorage.getItem(LISTAS_KEY) || '[]'); }
-function salvarListasArray(arr) { localStorage.setItem(LISTAS_KEY, JSON.stringify(arr)); }
-function contatosKey(id) { return 'prospeccao_contatos_' + id; }
-
-function carregarListas() {
-  const arr = carregarListasArray();
-  const sel = document.getElementById('seletorLista');
-  if (arr.length === 0) {
-    sel.innerHTML = '<option value="">Nenhuma lista ainda — crie uma abaixo</option>';
-    listaAtualId = null;
-    contatos = [];
-    renderTudo();
-    return;
-  }
-  sel.innerHTML = arr.map(l => `<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join('');
-  if (!listaAtualId || !arr.find(l => l.id === listaAtualId)) listaAtualId = arr[0].id;
-  sel.value = listaAtualId;
-  localStorage.setItem(LISTA_ATUAL_KEY, listaAtualId);
-  carregarContatos();
-}
-
-function criarNovaLista() {
-  const nome = document.getElementById('nomeNovaLista').value.trim();
-  if (!nome) { alert('Dê um nome pra lista.'); return; }
-  const arr = carregarListasArray();
-  const nova = { id: gerarId(), nome, criadoEm: Date.now() };
-  arr.unshift(nova);
-  salvarListasArray(arr);
-  document.getElementById('nomeNovaLista').value = '';
-  listaAtualId = nova.id;
-  localStorage.setItem(LISTA_ATUAL_KEY, listaAtualId);
-  carregarListas();
-}
-
-function trocarLista(id) {
-  if (!id) return;
-  listaAtualId = id;
-  localStorage.setItem(LISTA_ATUAL_KEY, id);
-  filtroAtual = 'insta';
-  buscaAtual = '';
-  document.getElementById('buscaInput').value = '';
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.f === 'insta'));
-  carregarContatos();
-}
-
-function apagarListaAtual() {
-  if (!listaAtualId) return;
-  if (!confirm('Apagar esta lista inteira (todos os contatos junto)? Não dá pra desfazer.')) return;
-  const arr = carregarListasArray().filter(l => l.id !== listaAtualId);
-  salvarListasArray(arr);
-  localStorage.removeItem(contatosKey(listaAtualId));
-  listaAtualId = null;
-  localStorage.removeItem(LISTA_ATUAL_KEY);
-  carregarListas();
-}
-
-function limparListaAtual() {
-  if (!listaAtualId) return;
-  if (!confirm('Apagar TODOS os contatos desta lista? A lista em si continua existindo, vazia.')) return;
-  contatos = [];
-  salvarContatos();
-  renderTudo();
-}
-
-/* ---------- Contatos (localStorage) ---------- */
-
-function carregarContatos() {
-  if (!listaAtualId) { contatos = []; renderTudo(); return; }
-  contatos = JSON.parse(localStorage.getItem(contatosKey(listaAtualId)) || '[]');
-  renderTudo();
-}
-
-function salvarContatos() {
-  if (listaAtualId) localStorage.setItem(contatosKey(listaAtualId), JSON.stringify(contatos));
-}
-
-function atualizarContato(id, patch) {
-  const c = contatos.find(x => x.id === id);
-  if (c) Object.assign(c, patch);
-  salvarContatos();
-  renderTudo();
-}
-
-function excluirDeVez(id) {
-  if (!confirm('Remover este perfil permanentemente da lista?')) return;
-  contatos = contatos.filter(c => c.id !== id);
-  salvarContatos();
-  renderTudo();
-}
-
-/* ---------- Download (CSV e TXT) ---------- */
-
-function csvCampo(valor) {
-  const s = String(valor == null ? '' : valor);
-  return '"' + s.replace(/"/g, '""') + '"';
-}
-
-function formatarData(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  return d.toLocaleDateString('pt-BR');
-}
-
-function nomeArquivoBase() {
-  const nomeLista = (carregarListasArray().find(l => l.id === listaAtualId) || {}).nome || 'lista';
-  return nomeLista.replace(/[^a-zA-Z0-9À-ÿ_-]+/g, '_') + '_aprovados_' +
-    new Date().toISOString().slice(0, 10);
-}
-
-function dispararDownload(conteudo, tipoMime, nomeArquivo) {
-  const blob = new Blob([conteudo], { type: tipoMime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nomeArquivo;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-}
-
-function baixarAprovados(formato) {
-  if (!listaAtualId) { alert('Escolha ou crie uma lista primeiro.'); return; }
-  const aprovados = contatos
-    .filter(c => c.status === 'aprovado')
-    .sort((a, b) => a.num - b.num);
-
-  if (aprovados.length === 0) {
-    alert('Nenhum perfil aprovado nesta lista ainda.');
-    return;
-  }
-
-  if (formato === 'txt') {
-    const conteudo = aprovados.map(c => '@' + c.username).join('\r\n');
-    dispararDownload(conteudo, 'text/plain;charset=utf-8', nomeArquivoBase() + '.txt');
-    return;
-  }
-
-  // CSV
-  const cabecalho = ['Usuario', 'Link', 'Aprovado em', 'Enviou no Insta', 'Enviou no WhatsApp', 'Respondeu'];
-  const linhas = aprovados.map(c => [
-    '@' + c.username,
-    'https://www.instagram.com/' + c.username + '/',
-    formatarData(c.aprovadoEm),
-    c.enviouInsta ? 'Sim' : 'Não',
-    c.enviouWhatsapp ? 'Sim' : 'Não',
-    c.respondeu ? 'Sim' : 'Não'
-  ].map(csvCampo).join(';'));
-
-  const conteudo = '\uFEFF' + [cabecalho.map(csvCampo).join(';')].concat(linhas).join('\r\n');
-  dispararDownload(conteudo, 'text/csv;charset=utf-8', nomeArquivoBase() + '.csv');
-}
-
-/* ---------- Template e scripts (globais, por dispositivo) ---------- */
-
-function saudacaoAtual() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Bom dia';
-  if (h < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
-
-function aplicarPlaceholders(template, contato) {
-  const nome = ((contato && contato.nome) || '').trim();
-  return template.replace(/{nome}/g, nome || 'tudo bem').replace(/{saudacao}/g, saudacaoAtual());
-}
-
-function getTemplate() { return localStorage.getItem(TEMPLATE_KEY) || TEMPLATE_PADRAO; }
-
-function salvarTemplate() {
-  const v = document.getElementById('templateInput').value.trim() || TEMPLATE_PADRAO;
-  localStorage.setItem(TEMPLATE_KEY, v);
-  renderLista();
-}
-
-function getScripts() {
-  const s = JSON.parse(localStorage.getItem(SCRIPTS_KEY) || 'null');
-  return s || SCRIPTS_PADRAO;
-}
-
-function salvarScripts() {
-  const s = {
-    ig: [
-      document.getElementById('scriptIg1').value || SCRIPTS_PADRAO.ig[0],
-      document.getElementById('scriptIg2').value || SCRIPTS_PADRAO.ig[1],
-      document.getElementById('scriptIg3').value || SCRIPTS_PADRAO.ig[2]
-    ],
-    waNutri: [
-      document.getElementById('scriptWaNutri1').value || SCRIPTS_PADRAO.waNutri[0],
-      document.getElementById('scriptWaNutri2').value || SCRIPTS_PADRAO.waNutri[1],
-      document.getElementById('scriptWaNutri3').value || SCRIPTS_PADRAO.waNutri[2]
-    ],
-    waSec: [
-      document.getElementById('scriptWaSec1').value || SCRIPTS_PADRAO.waSec[0],
-      document.getElementById('scriptWaSec2').value || SCRIPTS_PADRAO.waSec[1],
-      document.getElementById('scriptWaSec3').value || SCRIPTS_PADRAO.waSec[2]
-    ]
-  };
-  localStorage.setItem(SCRIPTS_KEY, JSON.stringify(s));
-  renderLista();
-  renderWaRef();
-}
-
-function carregarScriptsNaTela() {
-  const s = getScripts();
-  document.getElementById('scriptIg1').value = s.ig[0];
-  document.getElementById('scriptIg2').value = s.ig[1];
-  document.getElementById('scriptIg3').value = s.ig[2];
-  document.getElementById('scriptWaNutri1').value = s.waNutri[0];
-  document.getElementById('scriptWaNutri2').value = s.waNutri[1];
-  document.getElementById('scriptWaNutri3').value = s.waNutri[2];
-  document.getElementById('scriptWaSec1').value = s.waSec[0];
-  document.getElementById('scriptWaSec2').value = s.waSec[1];
-  document.getElementById('scriptWaSec3').value = s.waSec[2];
-}
-
-function copiarTexto(texto) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(texto).catch(() => prompt('Copie manualmente:', texto));
-  }
-  prompt('Copie manualmente:', texto);
-  return Promise.resolve();
-}
-
-/* ---- Sequência Instagram: 1 clique SEMPRE copia a etapa, abre o Instagram e avança ---- */
-function copiarEAbrirIG(id) {
-  const c = contatos.find(x => x.id === id);
-  if (!c) return;
-  const etapaAtual = c.ig_etapa || 0;
-  if (etapaAtual >= 3) return;
-  const proximaEtapa = etapaAtual + 1;
-  const texto = aplicarPlaceholders(getScripts().ig[proximaEtapa - 1], c);
-  copiarTexto(texto);
-  abrirInstagram(c.username);
-  atualizarContato(id, { ig_etapa: proximaEtapa });
-}
-
-function resetarIG(id) { atualizarContato(id, { ig_etapa: 0 }); }
-
-function renderScriptIG(c) {
-  const etapa = c.ig_etapa || 0;
-  if (etapa >= 3) {
-    return `<div class="script-block"><div class="script-title">Sequência Instagram <span class="badge done">✓ concluída</span></div>
-      <div class="script-reset" onclick="resetarIG('${c.id}')">↺ Reiniciar sequência</div></div>`;
-  }
-  const label = etapa === 0 ? 'Copiar etapa 1 e abrir Instagram' : `Copiar etapa ${etapa + 1} e abrir Instagram`;
-  const badge = etapa === 0 ? 'não iniciada' : `etapa ${etapa}/3 feita`;
-  return `<div class="script-block"><div class="script-title">Sequência Instagram <span class="badge">${badge}</span></div>
-    <button class="btn-ig" style="width:100%;" onclick="copiarEAbrirIG('${c.id}')">📋 ${label}</button>
-    ${etapa > 0 ? `<div class="script-reset" onclick="resetarIG('${c.id}')">↺ Reiniciar</div>` : ''}</div>`;
-}
-
-/* ---------- Checkboxes do lead ---------- */
-
-function toggleEnviouInsta(id) {
-  const c = contatos.find(x => x.id === id);
-  if (!c) return;
-  const novo = !c.enviouInsta;
-  const patch = { enviouInsta: novo };
-  if (!novo) patch.enviouWhatsapp = false;
-  atualizarContato(id, patch);
-}
-
-function toggleEnviouWhatsapp(id) {
-  const c = contatos.find(x => x.id === id);
-  if (!c || !c.enviouInsta) return;
-  atualizarContato(id, { enviouWhatsapp: !c.enviouWhatsapp });
-}
-
-function toggleRespondeu(id) {
-  const c = contatos.find(x => x.id === id);
-  if (!c) return;
-  atualizarContato(id, { respondeu: !c.respondeu });
-}
-
-/* ---------- Quota ---------- */
-
-function contarAFazer() {
-  return contatos.filter(c => c.status === 'aprovado' && !c.enviouInsta).length;
-}
-
-function renderQuota() {
-  document.getElementById('quotaTexto').textContent = String(contarAFazer());
-}
-
-/* ---------- Importação ---------- */
-
-function extrairUsername(valor) {
-  let v = valor.trim();
-  v = v.replace(/^https?:\/\//i, '');
-  v = v.replace(/^(www\.)?instagram\.com\//i, '');
-  v = v.replace(/^@/, '');
-  v = v.split('/')[0].split('?')[0].trim();
-  return v;
-}
-
-function adicionarLote() {
-  if (!listaAtualId) { alert('Escolha ou crie uma lista primeiro.'); return; }
-  const raw = document.getElementById('bulkInput').value;
-  const linhas = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  if (linhas.length === 0) return;
-
-  const existentes = new Set(contatos.map(c => c.username.toLowerCase()));
-  let proximoNum = contatos.length > 0 ? Math.max(...contatos.map(c => c.num)) + 1 : 1;
-  let ignorados = 0;
-
-  linhas.forEach(linha => {
-    const primeiraColuna = linha.split(',')[0];
-    const username = extrairUsername(primeiraColuna);
-    if (!username) return;
-    if (existentes.has(username.toLowerCase())) { ignorados++; return; }
-    contatos.push({
-      id: gerarId(),
-      num: proximoNum++,
-      username,
-      status: 'pendente',
-      ig_etapa: 0,
-      enviouInsta: false,
-      enviouWhatsapp: false,
-      respondeu: false
-    });
-    existentes.add(username.toLowerCase());
+function lotesOrdenados(){
+  const mapa = {};
+  state.extraidos.forEach(e => {
+    if(!e.lote) return;
+    if(!mapa[e.lote]) mapa[e.lote] = { lote: e.lote, data: '', count: 0 };
+    const d = String(e.data_extracao || '').slice(0,10);
+    if(d > mapa[e.lote].data) mapa[e.lote].data = d;
+    mapa[e.lote].count++;
   });
-
-  salvarContatos();
-  document.getElementById('bulkInput').value = '';
-  document.getElementById('importBox').removeAttribute('open');
-  renderTudo();
-  if (ignorados > 0) alert(ignorados + ' perfil(is) já existiam nesta lista e foram ignorados (duplicados).');
+  return Object.values(mapa).sort((a, b) => b.data.localeCompare(a.data) || numLote(b.lote) - numLote(a.lote));
 }
 
-function handleCsvUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    let linhas = String(e.target.result || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    linhas = linhas.map(l => (l.includes(';') && !l.includes(',')) ? l.replace(/;/g, ',') : l);
-    if (linhas.length && /instagram|whats\s*app|nome/i.test(linhas[0])) linhas.shift();
-    const bulkInput = document.getElementById('bulkInput');
-    bulkInput.value = (bulkInput.value.trim() ? bulkInput.value.trim() + '\n' : '') + linhas.join('\n');
-    document.getElementById('importBox').setAttribute('open', '');
-    bulkInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
-  reader.readAsText(file, 'UTF-8');
-  event.target.value = '';
+function itensFiltrados(){
+  const lote = document.getElementById('loteSel').value;
+  const termo = document.getElementById('busca').value.trim().replace(/^@/, '').toLowerCase();
+  return state.extraidos.filter(e =>
+    (lote === 'todos' || e.lote === lote) &&
+    (!termo || String(e.username).toLowerCase().includes(termo))
+  );
 }
 
-/* ---------- MODO TRIAGEM ---------- */
-
-function proximoPendente() {
-  return contatos.filter(c => c.status === 'pendente').sort((a, b) => a.num - b.num)[0];
-}
-
-function iniciarPlay() {
-  document.getElementById('viewNormal').style.display = 'none';
-  document.getElementById('viewPlay').style.display = 'block';
-  renderEscolhaModo();
-}
-
-function renderEscolhaModo() {
-  const view = document.getElementById('viewPlay');
-  view.innerHTML = `
-    <div class="play-card">
-      <div class="play-num">Como quer fazer esta sessão?</div>
-      <div class="decision-row" style="margin-top:14px;">
-        <button class="mode-btn-apenas" onclick="comecarTriagem('apenas')">📋 Apenas triagem</button>
-        <button class="mode-btn-prosp" onclick="comecarTriagem('prospeccao')">🎯 Triagem + prospecção</button>
-      </div>
-    </div>
-    <div class="exit-play" onclick="sairDoPlay()">← Voltar</div>`;
-}
-
-function comecarTriagem(modo) {
-  modoTriagem = modo;
-  renderPlay();
-}
-
-function sairDoPlay() {
-  document.getElementById('viewPlay').style.display = 'none';
-  document.getElementById('viewNormal').style.display = 'block';
-  renderTudo();
-}
-
-function renderPlay() {
-  const view = document.getElementById('viewPlay');
-  const proximo = proximoPendente();
-
-  if (!proximo) {
-    view.innerHTML = `
-      <div class="play-card"><div class="empty-play">🎉 Fila de triagem vazia.<br>Adicione mais perfis pra continuar.</div></div>
-      <div class="exit-play" onclick="sairDoPlay()">← Encerrar sessão de triagem</div>`;
-    return;
-  }
-
-  const prosp = modoTriagem === 'prospeccao';
-
-  const botoesDecisao = prosp ? `
-        <button class="btn-aprovar" onclick="decidir('${proximo.id}', 'prospectei')">✅ Prospectei</button>
-        <button class="btn-offline" onclick="decidir('${proximo.id}', 'excluido')">🚫 Não vou prospectar</button>`
-    : `
-        <button class="btn-aprovar" onclick="decidir('${proximo.id}', 'aprovado')">✅ Vou prospectar</button>
-        <button class="btn-offline" onclick="decidir('${proximo.id}', 'excluido')">🚫 Não vou, excluir</button>`;
-
-  view.innerHTML = `
-    <div class="quota-box">
-      <div class="quota-top"><span>Abordagens a fazer</span><b>${contarAFazer()}</b></div>
-    </div>
-    <div class="play-card">
-      <div class="play-num">Perfil #${proximo.num}</div>
-      <div class="play-username">@${proximo.username}</div>
-      <button class="play-ig-btn" onclick="verNoInstagram('${proximo.id}')">👀 Ver perfil no Instagram</button>
-      <div class="decision-label">${prosp ? 'Depois de ver o perfil, o que fazer?' : 'O que fazer com esse perfil?'}</div>
-      <div class="decision-row">${botoesDecisao}
-      </div>
-    </div>
-    <div class="exit-play" onclick="sairDoPlay()">← Encerrar sessão de triagem</div>`;
-}
-
-function verNoInstagram(id) {
-  const c = contatos.find(x => x.id === id);
-  if (!c) return;
-  abrirInstagram(c.username);
-}
-
-function decidir(id, acao) {
-  if (acao === 'excluido') {
-    atualizarContato(id, { status: 'excluido' });
-    renderPlay();
-    return;
-  }
-  // 'aprovado' (apenas triagem) ou 'prospectei' (triagem + prospecção: já enviou a mensagem inicial no Instagram)
-  atualizarContato(id, {
-    status: 'aprovado',
-    ig_etapa: 0,
-    enviouInsta: acao === 'prospectei',
-    enviouWhatsapp: false,
-    respondeu: false,
-    aprovadoEm: new Date().toISOString()
+/* ---------- renderização ---------- */
+function render(){
+  const cols = {1:[], 2:[], 3:[]};
+  itensFiltrados().forEach(e => {
+    const acao = statusDe(e.username, e.lote);
+    cols[colunaDe(acao)].push({ e, acao });
   });
-  renderPlay();
+  document.getElementById('c1').textContent = cols[1].length;
+  document.getElementById('c2').textContent = cols[2].length;
+  document.getElementById('c3').textContent = cols[3].length;
+  renderColuna('l1', cols[1], 1);
+  renderColuna('l2', cols[2], 2);
+  renderColuna('l3', cols[3], 3);
+  atualizarSelecao();
 }
 
-/* ---------- LISTA PRINCIPAL ---------- */
-
-function setFiltro(f) {
-  filtroAtual = f;
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.f === f));
-  renderLista();
-}
-
-function abrirInstagram(username) {
-  const appUrl = 'instagram://user?username=' + encodeURIComponent(username);
-  const webUrl = 'https://www.instagram.com/' + encodeURIComponent(username) + '/';
-  window.location.href = appUrl;
-  setTimeout(() => { window.location.href = webUrl; }, 700);
-}
-
-function toggleCard(id) {
-  if (cardsAbertos.has(id)) cardsAbertos.delete(id); else cardsAbertos.add(id);
-  renderLista();
-}
-
-function filtrarAprovados() {
-  const aprovados = contatos.filter(c => c.status === 'aprovado');
-  let base;
-  if (filtroAtual === 'whatsapp') base = aprovados.filter(c => (c.enviouInsta && !c.enviouWhatsapp) || cardsAbertos.has(c.id));
-  else if (filtroAtual === 'concluidos') base = aprovados.filter(c => c.enviouWhatsapp || cardsAbertos.has(c.id));
-  else base = aprovados.filter(c => !c.enviouInsta || cardsAbertos.has(c.id));
-
-  const termo = buscaAtual.trim().toLowerCase();
-  if (termo) base = base.filter(c => c.username.toLowerCase().includes(termo));
-  return base;
-}
-
-function statusLabel(c) {
-  if (c.respondeu) return '💬 Respondeu';
-  if (c.enviouWhatsapp) return '✓ Concluído';
-  if (c.enviouInsta) return 'Pronto pra WhatsApp';
-  return 'Aguardando envio no Insta';
-}
-
-function renderLista() {
-  const lista = document.getElementById('lista');
-  const visiveis = filtrarAprovados().sort((a, b) => (Number(b.respondeu) - Number(a.respondeu)) || (a.num - b.num));
-
-  if (!listaAtualId) {
-    lista.innerHTML = '<div class="empty">Crie uma lista acima pra começar.</div>';
-  } else if (visiveis.length === 0) {
-    lista.innerHTML = '<div class="empty">Nada aqui ainda.<br>Use "Iniciar triagem" pra aprovar perfis, ou busque acima.</div>';
-  } else {
-    lista.innerHTML = visiveis.map(c => {
-      const aberto = cardsAbertos.has(c.id);
-      const classes = ['card'];
-      if (c.respondeu) classes.push('respondeu');
-      if (c.enviouWhatsapp) classes.push('concluido-wa');
-      return `
-      <div class="${classes.join(' ')}">
-        <div class="card-header" onclick="toggleCard('${c.id}')">
-          <div class="num">${c.num}</div>
-          <div class="card-header-info">
-            <div class="card-header-nome">@${c.username}</div>
-            <div class="card-header-user">${statusLabel(c)}</div>
-          </div>
-          <div class="chevron">${aberto ? '▲' : '▼'}</div>
-          <div class="del" onclick="event.stopPropagation(); excluirDeVez('${c.id}')">✕</div>
-        </div>
-        ${aberto ? `
-        <div class="card-body">
-          <div class="actions">
-            <button class="btn-ig" style="flex:1;" onclick="abrirInstagram('${c.username}')">Abrir Instagram</button>
-          </div>
-          <div class="lead-checks">
-            <label class="check-row${c.enviouInsta ? ' checked' : ''}">
-              <input type="checkbox" ${c.enviouInsta ? 'checked' : ''} onchange="toggleEnviouInsta('${c.id}')">
-              ✅ Enviei no Insta
-            </label>
-            <label class="check-row${!c.enviouInsta ? ' disabled' : ''}${c.enviouWhatsapp ? ' checked' : ''}">
-              <input type="checkbox" ${c.enviouWhatsapp ? 'checked' : ''} ${!c.enviouInsta ? 'disabled' : ''} onchange="toggleEnviouWhatsapp('${c.id}')">
-              ✅ Enviei no WhatsApp
-            </label>
-            <label class="check-row respondeu${c.respondeu ? ' checked' : ''}">
-              <input type="checkbox" ${c.respondeu ? 'checked' : ''} onchange="toggleRespondeu('${c.id}')">
-              💬 Ela me respondeu
-            </label>
-          </div>
-          ${renderScriptIG(c)}
-        </div>` : ''}
-      </div>`;
-    }).join('');
-  }
-
-  const descartados = contatos.filter(c => c.status === 'excluido').sort((a,b) => a.num - b.num);
-  const listaDesc = document.getElementById('listaDescartados');
-  if (descartados.length === 0) {
-    listaDesc.innerHTML = '<p class="hint-small">Nenhum perfil descartado ainda.</p>';
-  } else {
-    listaDesc.innerHTML = descartados.map(c => `
-      <div class="card">
-        <div class="card-header">
-          <div class="num">${c.num}</div>
-          <div class="card-header-info"><div class="card-header-nome">@${c.username}</div></div>
-        </div>
-        <div class="card-body">
-          <div class="actions" style="margin-top:0;">
-            <button class="btn-ghost" style="flex:1;" onclick="restaurar('${c.id}')">↺ Restaurar pra fila</button>
-            <button class="btn-ghost" style="flex:1;" onclick="excluirDeVez('${c.id}')">✕ Apagar de vez</button>
-          </div>
-        </div>
-      </div>`).join('');
-  }
-}
-
-function restaurar(id) {
-  atualizarContato(id, { status: 'pendente', ig_etapa: 0, enviouInsta: false, enviouWhatsapp: false, respondeu: false });
-}
-
-/* ---------- Referência rápida WhatsApp (Nutricionista / Secretária) ---------- */
-
-function setWaRef(w) {
-  waRefAtual = w;
-  document.querySelectorAll('.waref-tab').forEach(t => t.classList.toggle('active', t.dataset.w === w));
-  renderWaRef();
-}
-
-function arrDaAbaAtual(scripts) {
-  if (waRefAtual === 'nutri') return scripts.waNutri;
-  if (waRefAtual === 'secretaria') return scripts.waSec;
-  return scripts.ig;
-}
-
-function copiarWaRef(i) {
-  const scripts = getScripts();
-  const arr = arrDaAbaAtual(scripts);
-  const texto = aplicarPlaceholders(arr[i], {});
-  copiarTexto(texto);
-}
-
-function renderWaRef() {
-  const box = document.getElementById('waRefBox');
-  if (!box) return;
-  const scripts = getScripts();
-  const arr = arrDaAbaAtual(scripts);
-  box.innerHTML = arr.map((msg, i) => {
-    const texto = aplicarPlaceholders(msg, {});
-    return `<div class="waref-block">
-      <div class="waref-etapa-title">Etapa ${i + 1} / 3</div>
-      <div class="waref-msg">${escapeHtml(texto)}</div>
-      <button class="waref-copybtn" onclick="copiarWaRef(${i})">📋 Copiar mensagem ${i + 1}</button>
-    </div>`;
+function renderColuna(id, lista, n){
+  const el = document.getElementById(id);
+  if(!lista.length){ el.innerHTML = '<div class="empty">Nada aqui</div>'; return; }
+  el.innerHTML = lista.map(({e, acao}) => {
+    const k = chave(e.username, e.lote);
+    const u = escapeHtml(e.username);
+    const lt = escapeHtml(e.lote);
+    const nome = e.nome ? '<div class="card-meta">' + escapeHtml(e.nome) + '</div>' : '';
+    const ig = '<button class="btn-ig" data-abrir="' + u + '">Abrir Insta</button>';
+    let acoes = '';
+    if(n === 1){
+      acoes = ig + '<button class="btn-ok" data-insta="' + u + '" data-lote="' + lt + '">✅ Enviei no Insta</button>';
+    } else if(n === 2){
+      acoes = '<label class="sel-label"><input type="checkbox" class="check" data-sel="' + escapeHtml(k) + '"' +
+        (state.selecionados.has(k) ? ' checked' : '') + '> Enviar</label>' +
+        ig + '<button class="btn-danger" data-resp="' + u + '" data-lote="' + lt + '">💬 Respondeu</button>';
+    } else {
+      const rotulos = {respondeu:'💬 Respondeu', enviado_fluxo:'📤 Enviado ao fluxo', descartado:'🚫 Descartado'};
+      acoes = '<span class="tag">' + (rotulos[acao] || escapeHtml(acao)) + '</span>' + ig;
+    }
+    return '<div class="card"><div class="card-user">@' + u + '</div>' + nome +
+      '<div class="card-meta">Lote ' + lt + '</div><div class="card-btns">' + acoes + '</div></div>';
   }).join('');
 }
 
-function renderContadoresColunas() {
-  const aprovados = contatos.filter(c => c.status === 'aprovado');
-  const insta = aprovados.filter(c => !c.enviouInsta).length;
-  const whats = aprovados.filter(c => c.enviouInsta && !c.enviouWhatsapp).length;
-  const concl = aprovados.filter(c => c.enviouWhatsapp).length;
-  document.getElementById('cntInsta').textContent = insta;
-  document.getElementById('cntWhatsapp').textContent = whats;
-  document.getElementById('cntConcluidos').textContent = concl;
+function atualizarSelecao(){
+  const col2 = new Set(state.extraidos
+    .filter(e => colunaDe(statusDe(e.username, e.lote)) === 2)
+    .map(e => chave(e.username, e.lote)));
+  [...state.selecionados].forEach(k => { if(!col2.has(k)) state.selecionados.delete(k); });
+  const n = state.selecionados.size;
+  document.getElementById('selInfo').textContent = n ? n + ' selecionado(s)' : '';
+  document.getElementById('btnFluxo').disabled = n === 0;
 }
 
-function renderTudo() {
-  const pendentes = contatos.filter(c => c.status === 'pendente').length;
-  const aprovados = contatos.filter(c => c.status === 'aprovado').length;
-  document.getElementById('topCount').innerHTML =
-    '<b>' + contatos.length + '</b> perfis nesta lista · <b>' + pendentes + '</b> na fila · <b>' + aprovados + '</b> aprovados';
-  document.getElementById('btnIniciarPlay').disabled = pendentes === 0;
-  document.getElementById('btnIniciarPlay').textContent = pendentes === 0 ? '▶ Nenhum perfil pendente na fila' : '▶ Iniciar triagem (' + pendentes + ' na fila)';
-  renderQuota();
-  renderContadoresColunas();
-  renderLista();
+function atualizarLotes(){
+  const sel = document.getElementById('loteSel');
+  const atual = sel.value;
+  const lotes = lotesOrdenados();
+  sel.innerHTML = '<option value="todos">Todos os lotes</option>' +
+    lotes.map(l => '<option value="' + escapeHtml(l.lote) + '">' + escapeHtml(l.lote) + ' · ' + l.count + ' · ' + dataBr(l.data) + '</option>').join('');
+  if(atual && (atual === 'todos' || lotes.some(l => l.lote === atual))) sel.value = atual;
+  else if(lotes.length) sel.value = lotes[0].lote;
 }
 
-/* ---------- Boot ---------- */
-
-document.getElementById('templateInput').value = getTemplate();
-carregarScriptsNaTela();
-carregarListas();
-renderWaRef();
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
-
-let eventoInstalacao = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  eventoInstalacao = e;
-  const btn = document.getElementById('btnInstalar');
-  if (btn) btn.style.display = 'block';
-});
-
-function instalarApp() {
-  const btn = document.getElementById('btnInstalar');
-  if (!eventoInstalacao) {
-    alert('Se o botão não funcionar: abra o menu (⋮) do Chrome e toque em "Instalar app" ou "Adicionar à tela inicial".');
-    return;
+/* ---------- comunicação com o n8n ---------- */
+async function sincronizar(){
+  document.getElementById('status').textContent = 'Carregando…';
+  try{
+    const r = await fetch(API + '/app-lotes');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    state.extraidos = d.extraidos || [];
+    state.eventos = d.eventos || [];
+    atualizarLotes();
+    document.getElementById('status').textContent =
+      state.extraidos.length + ' extraídos · ' + state.eventos.length + ' ações · atualizado ' + new Date().toLocaleTimeString('pt-BR');
+    render();
+  }catch(err){
+    document.getElementById('status').textContent = 'Erro ao carregar: ' + err.message;
   }
-  eventoInstalacao.prompt();
-  eventoInstalacao.userChoice.finally(() => {
-    eventoInstalacao = null;
-    if (btn) btn.style.display = 'none';
-  });
 }
 
-window.addEventListener('appinstalled', () => {
-  const btn = document.getElementById('btnInstalar');
-  if (btn) btn.style.display = 'none';
+async function registrar(u, l, acao){
+  const r = await fetch(API + '/app-acao', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ username: u, lote: l, acao: acao })
+  });
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  state.eventos.push({ username: u, lote: l, acao: acao, data_hora: new Date().toISOString() });
+}
+
+async function marcarInsta(u, l){
+  try{ await registrar(u, l, 'insta_enviado'); render(); }
+  catch(err){ alert('Não consegui salvar: ' + err.message); }
+}
+
+async function marcarRespondeu(u, l){
+  state.selecionados.delete(chave(u, l));
+  try{ await registrar(u, l, 'respondeu'); render(); }
+  catch(err){ alert('Não consegui salvar: ' + err.message); }
+}
+
+/* ---------- seleção ---------- */
+function toggleSel(k){
+  if(state.selecionados.has(k)) state.selecionados.delete(k); else state.selecionados.add(k);
+  atualizarSelecao();
+}
+
+function selecionarTodos(){
+  itensFiltrados().forEach(e => {
+    if(colunaDe(statusDe(e.username, e.lote)) === 2) state.selecionados.add(chave(e.username, e.lote));
+  });
+  render();
+}
+
+function limparSelecao(){ state.selecionados.clear(); render(); }
+
+/* ---------- confirmação em duas etapas ---------- */
+function abrirModal(passo){
+  const n = state.selecionados.size;
+  const box = document.getElementById('modalBox');
+  if(passo === 1){
+    box.innerHTML = '<h2>Enviar ' + n + ' contato(s) para o fluxo?</h2>' +
+      '<p>Os contatos marcados vão para o n8n e entram na fila de envio.</p>' +
+      '<div class="row"><button class="btn-ghost" id="mCancel">Cancelar</button><button class="btn-primary" id="mNext">Continuar</button></div>';
+    document.getElementById('mNext').onclick = () => abrirModal(2);
+  } else {
+    box.innerHTML = '<h2>Confirmar envio?</h2>' +
+      '<p>Isso vai disparar as mensagens de e-mail e WhatsApp nas próximas janelas (09h, 13h e 17h). Quem respondeu fica de fora.</p>' +
+      '<div class="row"><button class="btn-ghost" id="mCancel">Cancelar</button><button class="btn-ok" id="mOk">Confirmar</button></div>';
+    document.getElementById('mOk').onclick = enviarFluxo;
+  }
+  document.getElementById('mCancel').onclick = fecharModal;
+  document.getElementById('modal').classList.add('show');
+}
+
+function fecharModal(){ document.getElementById('modal').classList.remove('show'); }
+
+async function enviarFluxo(){
+  fecharModal();
+  const pares = [...state.selecionados].map(k => {
+    const i = k.indexOf('|');
+    return { username: k.slice(0, i), lote: k.slice(i + 1) };
+  });
+  if(!pares.length) return;
+  try{
+    const r = await fetch(FLUXO, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ profiles: pares.map(p => ({ username: p.username })) })
+    });
+    if(!r.ok) throw new Error('fluxo HTTP ' + r.status);
+    for(const p of pares){ await registrar(p.username, p.lote, 'enviado_fluxo'); }
+    state.selecionados.clear();
+    render();
+    alert(pares.length + ' contato(s) enviados ao fluxo.');
+  }catch(err){
+    alert('Erro ao enviar: ' + err.message);
+  }
+}
+
+/* ---------- abrir perfil ---------- */
+function abrirIG(u){
+  window.location.href = 'instagram://user?username=' + encodeURIComponent(u);
+  setTimeout(() => window.open('https://www.instagram.com/' + encodeURIComponent(u) + '/', '_blank'), 700);
+}
+
+/* ---------- eventos ---------- */
+document.getElementById('loteSel').addEventListener('change', render);
+document.getElementById('busca').addEventListener('input', render);
+document.getElementById('btnSync').addEventListener('click', sincronizar);
+document.getElementById('btnSelTodos').addEventListener('click', selecionarTodos);
+document.getElementById('btnLimpar').addEventListener('click', limparSelecao);
+document.getElementById('btnFluxo').addEventListener('click', () => abrirModal(1));
+document.getElementById('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
+
+// Delegação de cliques nos cards
+document.querySelector('.board').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if(b){
+    if(b.dataset.abrir) return abrirIG(b.dataset.abrir);
+    if(b.dataset.insta) return marcarInsta(b.dataset.insta, b.dataset.lote);
+    if(b.dataset.resp) return marcarRespondeu(b.dataset.resp, b.dataset.lote);
+  }
 });
+document.querySelector('.board').addEventListener('change', e => {
+  if(e.target.dataset.sel) toggleSel(e.target.dataset.sel);
+});
+
+sincronizar();
 </script>
 </body>
 </html>
