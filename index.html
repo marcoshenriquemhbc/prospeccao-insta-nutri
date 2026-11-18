@@ -392,10 +392,7 @@ function abrirModal(corpo, botoes, acoes){
 }
 function fecharModal(){ document.getElementById('modal').classList.remove('show'); }
 
-function abrirIG(u){
-  window.location.href = 'instagram://user?username=' + encodeURIComponent(u);
-  setTimeout(() => window.open('https://www.instagram.com/' + encodeURIComponent(u) + '/', '_blank'), 700);
-}
+
 
 /* ---------- abas ---------- */
 function mostrar(aba){
@@ -421,7 +418,6 @@ document.getElementById('modal').addEventListener('click', e => { if(e.target.id
 document.getElementById('listaFila').addEventListener('click', e => {
   const b = e.target.closest('button');
   if(!b) return;
-  if(b.dataset.abrir) return abrirIG(b.dataset.abrir);
   if(b.dataset.acao) return acaoFila(b.dataset.u, b.dataset.acao);
 });
 
