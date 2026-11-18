@@ -6,7 +6,7 @@
 <title>Prospecção</title>
 <meta name="theme-color" content="#0b0d10">
 <style>
-:root{--bg:#0b0d10;--panel:#14171b;--panel2:#1b1f24;--border:#232830;--text:#e8eaed;--muted:#9aa0a6;--accent:#8b5cf6;--ok:#22c55e;--no:#ef4444;--warn:#f59e0b;--ig:linear-gradient(135deg,#f9ce34,#ee2a7b 45%,#6228d7);}
+:root{--bg:#0b0d10;--panel:#14171b;--panel2:#1b1f24;--border:#232830;--text:#e8eaed;--muted:#9aa0a6;--accent:#8b5cf6;--ok:#22c55e;--no:#ef4444;--ig:linear-gradient(135deg,#f9ce34,#ee2a7b 45%,#6228d7);}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter",system-ui,sans-serif;padding:env(safe-area-inset-top,0px) 12px env(safe-area-inset-bottom,0px)}
 .wrap{max-width:720px;margin:0 auto;padding:12px 0 60px}
@@ -24,7 +24,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .btn-ok{background:var(--ok);color:#04241a}
 .btn-no{background:var(--no)}
 .btn-ig{background:var(--ig)}
-.btn-acc{background:var(--accent)}
+.btn-link{display:block;text-decoration:none;text-align:center;padding:12px 14px;color:#fff;border-radius:10px;font-weight:700;font-size:14px}
 .bar{height:8px;background:var(--panel2);border-radius:8px;overflow:hidden;margin:8px 0 14px}
 .bar>div{height:100%;background:var(--ok);width:0;transition:width .2s}
 .count{font-size:13px;color:var(--muted);text-align:center;margin-bottom:10px}
@@ -32,9 +32,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .card-user{font-size:22px;font-weight:800;word-break:break-all}
 .card-nome{font-size:14px;color:var(--muted);margin-top:6px;min-height:18px}
 .card-meta{font-size:12px;color:var(--muted);margin-top:4px}
-.card .btn-ig{margin-top:14px;width:100%;display:block}
-.btn-link{text-decoration:none;text-align:center;padding:12px 14px;color:#fff;border-radius:10px;font-weight:700;font-size:14px}
-.item-btns a.btn-link{flex:1;min-width:100px;padding:9px 10px;font-size:12px}
+.card .btn-link{margin-top:14px}
 .decide{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .decide button{padding:18px 10px;font-size:16px}
 .undo{margin-top:12px;width:100%}
@@ -50,7 +48,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .pill{font-size:11px;border-radius:20px;padding:4px 10px;background:var(--panel2);color:var(--muted);white-space:nowrap}
 .pill.fila{color:#c4b5fd}.pill.contatado{color:#7dd3fc}.pill.respondeu{color:#4ade80}.pill.recusou{color:var(--no)}
 .item-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.item-btns button{padding:9px 10px;font-size:12px;flex:1;min-width:100px}
+.item-btns button,.item-btns a.btn-link{flex:1;min-width:100px;padding:9px 10px;font-size:12px}
 .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:14px}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .summary div{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
@@ -70,33 +68,31 @@ button:disabled{opacity:.35;cursor:not-allowed}
   <h1>Prospecção</h1>
   <div class="tabs">
     <button class="tab on" id="tabTriagem">Triagem</button>
-    <button class="tab" id="tabFila">Fila e respostas</button>
+    <button class="tab" id="tabFila">Abordagem</button>
   </div>
   <div class="status" id="status">Carregando…</div>
 
-  <!-- ===== TRIAGEM ===== -->
+  <!-- ===== TRIAGEM (por dia) ===== -->
   <section id="viewTriagem">
     <div class="row">
-      <select id="loteSel" class="grow"></select>
+      <select id="diaSel" class="grow"></select>
       <button class="btn-ghost" id="btnSync">🔄</button>
-      <button class="btn-no" id="btnApagar" disabled>🗑</button>
+      <button class="btn-no" id="btnApagar">🗑</button>
     </div>
     <div class="bar"><div id="barra"></div></div>
     <div class="count" id="contagem"></div>
-
     <div id="cardArea"></div>
-
     <div id="finalArea" hidden>
       <div class="done-box">
         <h2 id="finalTitulo"></h2>
         <p id="finalTexto"></p>
-        <button class="btn-ok" id="btnFinalizar" style="width:100%">Finalizar lote e enviar para a fila</button>
+        <button class="btn-ok" id="btnFinalizar" style="width:100%">Confirmar o dia e enviar os aprovados para a fila</button>
       </div>
     </div>
     <div class="kbd">Atalhos: P ou → prospectar · D ou ← descartar · Z desfazer</div>
   </section>
 
-  <!-- ===== FILA ===== -->
+  <!-- ===== ABORDAGEM (fila por dia) ===== -->
   <section id="viewFila" hidden>
     <div class="summary">
       <div><b id="sFila">0</b><span>na fila</span></div>
@@ -122,39 +118,46 @@ button:disabled{opacity:.35;cursor:not-allowed}
 
 <script>
 const API = 'https://n8n.iaatende.click/webhook';
-const state = { extraidos: [], eventos: [], fila: [], envios: [], pilha: [], lotesConfirmados: {} };
+const state = { extraidos: [], eventos: [], fila: [], envios: [], pilha: [] };
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function numLote(l){ const m = /-\s*(\d+)$/.exec(l || ''); return m ? parseInt(m[1], 10) : 0; }
 function hoje(){ return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); }
 function setStatus(t){ document.getElementById('status').textContent = t; }
+function dataBr(iso){ const p = String(iso).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
 
-/* ---------- dados ---------- */
+/* ---------- agrupamento por dia de extracao ---------- */
+function diaDe(e){ return String(e.data_extracao || '').slice(0, 10); }
+function diasLista(){ return [...new Set(state.extraidos.map(diaDe).filter(Boolean))].sort().reverse(); }
+function itensDoDia(d){ return state.extraidos.filter(e => diaDe(e) === d); }
+function lotesDoDia(d){ return [...new Set(itensDoDia(d).map(e => e.lote))]; }
+
+/* ---------- eventos ---------- */
 function ultimaAcao(u, l, grupo){
   const evs = state.eventos.filter(e => e.username === u && e.lote === l && grupo.includes(e.acao))
     .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
   return evs.length ? evs[evs.length - 1].acao : null;
 }
 function decisao(u, l){ return ultimaAcao(u, l, ['prospectar', 'descartar', 'desfeito']); }
-function lotesLista(){
-  const m = {};
-  state.extraidos.forEach(e => {
-    if(!e.lote) return;
-    if(!m[e.lote]) m[e.lote] = { lote: e.lote, data: '', n: 0 };
-    const d = String(e.data_extracao || '').slice(0, 10);
-    if(d > m[e.lote].data) m[e.lote].data = d;
-    m[e.lote].n++;
-  });
-  return Object.values(m).sort((a, b) => b.data.localeCompare(a.data) || numLote(b.lote) - numLote(a.lote));
-}
-function loteConfirmado(lote){
-  const evs = state.eventos.filter(e => e.username === '__lote__' && e.lote === lote)
+function loteConfirmado(l){
+  const evs = state.eventos.filter(e => e.username === '__lote__' && e.lote === l)
     .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
   return evs.length > 0 && evs[evs.length - 1].acao === 'lote_confirmado';
 }
-function itensDoLote(lote){ return state.extraidos.filter(e => e.lote === lote); }
-function pendentes(lote){ return itensDoLote(lote).filter(e => { const d = decisao(e.username, lote); return !d || d === 'desfeito'; }); }
-function aprovados(lote){ return itensDoLote(lote).filter(e => decisao(e.username, lote) === 'prospectar'); }
+function diaConfirmado(d){ const ls = lotesDoDia(d); return ls.length > 0 && ls.every(loteConfirmado); }
+function pendentes(d){ return itensDoDia(d).filter(e => { const x = decisao(e.username, e.lote); return !x || x === 'desfeito'; }); }
+function aprovados(d){ return itensDoDia(d).filter(e => decisao(e.username, e.lote) === 'prospectar'); }
+
+function loteDoLead(u){
+  const ev = state.eventos.filter(e => e.username === u && e.acao === 'confirmado_fila')
+    .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
+  return ev.length ? ev[ev.length - 1].lote : '';
+}
+function diaDoLead(u){
+  const l = loteDoLead(u);
+  if(!l) return '';
+  const reg = state.extraidos.find(x => x.username === u && x.lote === l);
+  return reg ? diaDe(reg) : '';
+}
 
 async function gravarAcao(u, l, acao){
   const r = await fetch(API + '/prospeccao-triagem-acao', {
@@ -174,7 +177,7 @@ async function sincronizar(){
     const d = await r.json();
     state.extraidos = d.extraidos || [];
     state.eventos = d.eventos || [];
-    atualizarLoteSel();
+    atualizarDiaSel();
     renderTriagem();
     setStatus('Atualizado às ' + new Date().toLocaleTimeString('pt-BR'));
   }catch(err){ setStatus('Erro ao carregar: ' + err.message); }
@@ -191,45 +194,50 @@ async function sincronizarFila(){
     if(rl.ok){ const dl = await rl.json(); state.extraidos = dl.extraidos || []; state.eventos = dl.eventos || []; }
     atualizarFiltroDia();
     renderFila();
-  }catch(err){ setStatus('Erro na fila: ' + err.message); }
+  }catch(err){ setStatus('Erro na abordagem: ' + err.message); }
 }
 
-/* ---------- triagem ---------- */
-function atualizarLoteSel(){
-  const sel = document.getElementById('loteSel');
+/* ---------- triagem por dia ---------- */
+function rotuloDia(d){
+  const n = lotesDoDia(d).length;
+  const p = itensDoDia(d).length;
+  return dataBr(d) + ' · ' + n + ' extração(ões) · ' + p + ' perfis' + (diaConfirmado(d) ? ' ✅' : '');
+}
+
+function atualizarDiaSel(){
+  const sel = document.getElementById('diaSel');
   const atual = sel.value;
-  const lotes = lotesLista();
-  sel.innerHTML = lotes.map(l => {
-    const tag = loteConfirmado(l.lote) ? '✅ ' : '';
-    return '<option value="' + esc(l.lote) + '">' + tag + esc(l.lote) + ' · ' + l.n + ' perfis</option>';
-  }).join('');
-  if(atual && lotes.some(l => l.lote === atual)) sel.value = atual;
+  const dias = diasLista();
+  sel.innerHTML = dias.map(d => '<option value="' + d + '">' + esc(rotuloDia(d)) + '</option>').join('');
+  if(atual && dias.includes(atual)) sel.value = atual;
   else {
-    const abertos = lotes.find(l => !loteConfirmado(l.lote));
-    if(abertos) sel.value = abertos.lote;
+    const abertos = dias.find(d => !diaConfirmado(d));
+    if(abertos) sel.value = abertos;
   }
 }
 
 function renderTriagem(){
-  const lote = document.getElementById('loteSel').value;
-  const tudo = itensDoLote(lote);
-  const pend = pendentes(lote);
-  const ok = aprovados(lote).length;
-  const conf = loteConfirmado(lote);
-  const feitos = tudo.length - pend.length;
-  document.getElementById('barra').style.width = tudo.length ? (feitos / tudo.length * 100) + '%' : '0';
-  document.getElementById('contagem').textContent = tudo.length
-    ? feitos + ' de ' + tudo.length + ' decididos · ' + ok + ' para prospectar'
-    : 'Nenhum perfil neste lote';
-  document.getElementById('btnApagar').disabled = !lote || conf;
-  document.getElementById('btnApagar').title = conf ? 'Lote já confirmado' : 'Apagar lote';
-
+  const d = document.getElementById('diaSel').value;
   const area = document.getElementById('cardArea');
   const fin = document.getElementById('finalArea');
-  if(!lote || !tudo.length){ area.innerHTML = '<div class="empty">Sem perfis neste lote.</div>'; fin.hidden = true; return; }
+  if(!d){ area.innerHTML = '<div class="empty">Sem extrações.</div>'; fin.hidden = true; return; }
+
+  const tudo = itensDoDia(d);
+  const pend = pendentes(d);
+  const ok = aprovados(d).length;
+  const conf = diaConfirmado(d);
+  document.getElementById('barra').style.width = tudo.length ? ((tudo.length - pend.length) / tudo.length * 100) + '%' : '0';
+  document.getElementById('contagem').textContent = tudo.length
+    ? (tudo.length - pend.length) + ' de ' + tudo.length + ' decididos · ' + ok + ' para prospectar'
+    : 'Nenhum perfil neste dia';
+  const apagar = document.getElementById('btnApagar');
+  apagar.disabled = !tudo.length || lotesDoDia(d).some(loteConfirmado);
+  apagar.title = apagar.disabled ? 'Há extrações já confirmadas' : 'Apagar as extrações deste dia';
+
+  if(!tudo.length){ area.innerHTML = '<div class="empty">Sem perfis neste dia.</div>'; fin.hidden = true; return; }
 
   if(conf){
-    area.innerHTML = '<div class="done-box"><h2>Lote já enviado para a fila</h2><p>' + ok + ' perfis aprovados entraram na base de disparo.</p></div>';
+    area.innerHTML = '<div class="done-box"><h2>Dia já enviado para a fila</h2><p>' + ok + ' perfil(s) aprovado(s) entraram na base de disparo.</p></div>';
     fin.hidden = true;
     return;
   }
@@ -240,7 +248,7 @@ function renderTriagem(){
       '<div class="card">' +
         '<div class="card-user">@' + esc(p.username) + '</div>' +
         '<div class="card-nome">' + esc(p.nome) + '</div>' +
-        '<div class="card-meta">Extraído em ' + esc(String(p.data_extracao || '').slice(0, 10)) + '</div>' +
+        '<div class="card-meta">Extração ' + esc(p.lote) + ' · ' + pend.length + ' pendente(s)</div>' +
         '<a class="btn-ig btn-link" href="https://www.instagram.com/' + encodeURIComponent(p.username) + '/" target="_blank" rel="noopener">Abrir no Instagram</a>' +
         '<div class="decide">' +
           '<button class="btn-no" id="btnNao">✕ Descartar</button>' +
@@ -248,7 +256,6 @@ function renderTriagem(){
         '</div>' +
         '<button class="btn-ghost undo" id="btnDesfazer"' + (state.pilha.length ? '' : ' disabled') + '>↶ Desfazer última</button>' +
       '</div>';
-    
     document.getElementById('btnSim').onclick = () => decidir(p, 'prospectar');
     document.getElementById('btnNao').onclick = () => decidir(p, 'descartar');
     document.getElementById('btnDesfazer').onclick = desfazer;
@@ -257,129 +264,123 @@ function renderTriagem(){
   }
 
   area.innerHTML = '';
-  document.getElementById('finalTitulo').textContent = 'Triagem concluída';
-  document.getElementById('finalTexto').textContent = ok + ' aprovado(s) e ' + (tudo.length - ok) + ' descartado(s). Confirmar envio dos aprovados para a fila?';
+  document.getElementById('finalTitulo').textContent = 'Triagem do dia concluída';
+  document.getElementById('finalTexto').textContent = ok + ' aprovado(s) e ' + (tudo.length - ok) + ' descartado(s) em ' + lotesDoDia(d).length + ' extração(ões). Confirmar o envio dos aprovados para a fila?';
   fin.hidden = false;
 }
 
 async function decidir(p, acao){
-  const lote = p.lote;
-  const anterior = decisao(p.username, lote) || 'desfeito';
-  state.pilha.push({ u: p.username, l: lote, anterior: anterior });
+  const anterior = decisao(p.username, p.lote) || 'desfeito';
+  state.pilha.push({ u: p.username, l: p.lote, anterior: anterior });
   renderTriagem();
-  try{
-    await gravarAcao(p.username, lote, acao);
-  }catch(err){
-    state.pilha.pop();
-    alert('Não consegui salvar: ' + err.message);
-  }
+  try{ await gravarAcao(p.username, p.lote, acao); }
+  catch(err){ state.pilha.pop(); alert('Não consegui salvar: ' + err.message); }
   renderTriagem();
 }
 
 async function desfazer(){
   const it = state.pilha.pop();
   if(!it) return;
-  try{
-    await gravarAcao(it.u, it.l, it.anterior);
-  }catch(err){
-    state.pilha.push(it);
-    alert('Não consegui desfazer: ' + err.message);
-  }
+  try{ await gravarAcao(it.u, it.l, it.anterior); }
+  catch(err){ state.pilha.push(it); alert('Não consegui desfazer: ' + err.message); }
   renderTriagem();
 }
 
+function abrirModal(corpo, botoes, acoes){
+  document.getElementById('modalBox').innerHTML = corpo + '<div class="row">' + botoes + '</div>';
+  Object.keys(acoes).forEach(sel => { document.querySelector(sel).onclick = acoes[sel]; });
+  document.getElementById('mNao').onclick = fecharModal;
+  document.getElementById('modal').classList.add('show');
+}
+function fecharModal(){ document.getElementById('modal').classList.remove('show'); }
+
 function abrirModalApagar(){
-  const lote = document.getElementById('loteSel').value;
-  const n = itensDoLote(lote).length;
-  abrirModal('<h2>Apagar o lote ' + esc(lote) + '?</h2><p>Saem ' + n + ' perfil(s) deste lote. Os já prospectados e os descartados continuam na base e não voltam a ser extraídos.</p>',
+  const d = document.getElementById('diaSel').value;
+  const n = itensDoDia(d).length;
+  abrirModal('<h2>Apagar as extrações de ' + dataBr(d) + '?</h2><p>Saem ' + n + ' perfil(s) deste dia. Os perfis continuam na base de dedupe e não voltam a ser extraídos.</p>',
     '<button class="btn-ghost" id="mNao">Cancelar</button><button class="btn-no" id="mSim">Apagar</button>',
-    { '#mSim': apagarLote });
+    { '#mSim': apagarDia });
 }
 
-async function apagarLote(){
+async function apagarDia(){
   fecharModal();
-  const lote = document.getElementById('loteSel').value;
+  const d = document.getElementById('diaSel').value;
   try{
-    const r = await fetch(API + '/prospeccao-triagem-apagar-lote', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ lote: lote })
-    });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    state.extraidos = state.extraidos.filter(e => e.lote !== lote);
+    for(const lote of lotesDoDia(d)){
+      const r = await fetch(API + '/prospeccao-triagem-apagar-lote', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ lote: lote })
+      });
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+    }
+    state.extraidos = state.extraidos.filter(e => diaDe(e) !== d);
     state.pilha = [];
-    atualizarLoteSel();
+    atualizarDiaSel();
     renderTriagem();
   }catch(err){ alert('Não consegui apagar: ' + err.message); }
 }
 
 function abrirModalFinalizar(){
-  const lote = document.getElementById('loteSel').value;
-  const ok = aprovados(lote).length;
-  if(!ok){ alert('Nenhum perfil aprovado neste lote.'); return; }
-  abrirModal('<h2>Confirmar envio?</h2><p>' + ok + ' perfil(s) vão para a base. O sorteio das 08h monta os disparos (WhatsApp e e-mail) a partir da confirmação, por ordem de chegada.</p>',
+  const d = document.getElementById('diaSel').value;
+  const ok = aprovados(d).length;
+  if(!ok){ alert('Nenhum perfil aprovado neste dia.'); return; }
+  abrirModal('<h2>Confirmar o envio?</h2><p>' + ok + ' perfil(s) aprovado(s) vão para a base, de ' + lotesDoDia(d).length + ' extração(ões). O sorteio das 08h monta os disparos (WhatsApp e e-mail) por ordem de confirmação.</p>',
     '<button class="btn-ghost" id="mNao">Cancelar</button><button class="btn-ok" id="mSim">Confirmar</button>',
-    { '#mSim': confirmarLote });
+    { '#mSim': confirmarDia });
 }
 
-async function confirmarLote(){
+async function confirmarDia(){
   fecharModal();
-  const lote = document.getElementById('loteSel').value;
+  const d = document.getElementById('diaSel').value;
   const btn = document.getElementById('btnFinalizar');
   btn.disabled = true;
   try{
-    const r = await fetch(API + '/prospeccao-triagem-confirmar', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ lote: lote })
-    });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    state.eventos.push({ username: '__lote__', lote: lote, acao: 'lote_confirmado', data_hora: new Date().toISOString() });
-    atualizarLoteSel();
+    const lotes = [...new Set(aprovados(d).map(e => e.lote))];
+    for(const lote of lotes){
+      const r = await fetch(API + '/prospeccao-triagem-confirmar', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ lote: lote })
+      });
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      state.eventos.push({ username: '__lote__', lote: lote, acao: 'lote_confirmado', data_hora: new Date().toISOString() });
+    }
+    atualizarDiaSel();
     renderTriagem();
-    setStatus('Lote enviado. A base é atualizada em alguns segundos.');
-    setTimeout(sincronizar, 4000);
+    setStatus('Dia enviado para a fila. A base atualiza em alguns segundos.');
+    setTimeout(sincronizar, 5000);
   }catch(err){ alert('Não consegui confirmar: ' + err.message); }
   finally{ btn.disabled = false; }
 }
 
-/* ---------- fila ---------- */
-function diaDoLead(u){
-  const ev = state.eventos.filter(e => e.username === u && e.acao === 'confirmado_fila')
-    .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
-  if(!ev.length) return { lote: '', dia: '' };
-  const lote = ev[ev.length - 1].lote;
-  const reg = state.extraidos.find(x => x.username === u && x.lote === lote);
-  return { lote: lote, dia: reg ? String(reg.data_extracao || '').slice(0, 10) : '' };
-}
-function dataBr(iso){ const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+/* ---------- abordagem (fila por dia) ---------- */
 function atualizarFiltroDia(){
   const sel = document.getElementById('filtroDia');
   const atual = sel.value;
-  const dias = [...new Set(state.fila.map(l => diaDoLead(l.username).dia).filter(Boolean))].sort().reverse();
+  const dias = [...new Set(state.fila.map(l => diaDoLead(l.username)).filter(Boolean))].sort().reverse();
   sel.innerHTML = '<option value="todos">Todos os dias</option>' +
     dias.map(d => '<option value="' + d + '">' + dataBr(d) + '</option>').join('');
   if(atual && (atual === 'todos' || dias.includes(atual))) sel.value = atual;
+  else if(dias.length) sel.value = dias[0];
 }
 
 function renderFila(){
-  const env = state.envios;
   const hj = hoje();
-  const enviadosHoje = new Set(env.filter(e => String(e.data_envio || '').slice(0, 10) === hj).map(e => e.username));
-  const filaN = state.fila.filter(l => l.status === 'fila').length;
-  const respN = state.fila.filter(l => l.status === 'respondeu').length;
-  document.getElementById('sFila').textContent = filaN;
+  const enviadosHoje = new Set(state.envios.filter(e => String(e.data_envio || '').slice(0, 10) === hj).map(e => e.username));
+  document.getElementById('sFila').textContent = state.fila.filter(l => l.status === 'fila').length;
   document.getElementById('sHoje').textContent = enviadosHoje.size;
-  document.getElementById('sResp').textContent = respN;
+  document.getElementById('sResp').textContent = state.fila.filter(l => l.status === 'respondeu').length;
 
-  const filtro = document.getElementById('filtroFila').value;
   const dia = document.getElementById('filtroDia').value;
+  const status = document.getElementById('filtroFila').value;
   const lista = state.fila
-    .filter(l => (filtro === 'todos' || l.status === filtro) && (dia === 'todos' || diaDoLead(l.username).dia === dia))
+    .filter(l => (status === 'todos' || l.status === status) && (dia === 'todos' || diaDoLead(l.username) === dia))
     .sort((a, b) => String(a.username).localeCompare(String(b.username)));
   const el = document.getElementById('listaFila');
   if(!lista.length){ el.innerHTML = '<div class="empty">Nada aqui.</div>'; return; }
   el.innerHTML = lista.map(l => {
     const canais = [l.whatsapp ? 'WhatsApp' : '', l.email ? 'e-mail' : ''].filter(Boolean).join(' + ') || 'sem contato';
     const u = esc(l.username);
+    const lote = loteDoLead(l.username);
     let btns = '<a class="btn-ig btn-link" href="https://www.instagram.com/' + encodeURIComponent(l.username) + '/" target="_blank" rel="noopener">Instagram</a>';
     if(l.status === 'respondeu' || l.status === 'recusou'){
       btns += '<button class="btn-ghost" data-acao="reabrir" data-u="' + u + '">↶ Reabrir</button>';
@@ -389,33 +390,21 @@ function renderFila(){
     }
     return '<div class="item"><div class="item-top"><div>' +
       '<div class="item-user">@' + u + '</div>' +
-      '<div class="item-meta">' + esc(l.nome) + ' · ' + canais + (diaDoLead(l.username).lote ? ' · lote ' + esc(diaDoLead(l.username).lote) : '') + '</div></div>' +
+      '<div class="item-meta">' + esc(l.nome) + ' · ' + canais + (lote ? ' · extração ' + esc(lote) : '') + '</div></div>' +
       '<span class="pill ' + esc(l.status) + '">' + esc(l.status) + '</span></div>' +
       '<div class="item-btns">' + btns + '</div></div>';
   }).join('');
 }
 
 async function acaoFila(u, acao){
+  const lead = state.fila.find(l => l.username === u);
+  const lote = loteDoLead(u);
   try{
-    await gravarAcao(u, '__fila__', acao);
-    const lead = state.fila.find(l => l.username === u);
-    if(lead){
-      lead.status = acao === 'respondeu' ? 'respondeu' : acao === 'recusou' ? 'recusou' : 'contatado';
-    }
+    await gravarAcao(u, lote || '__fila__', acao);
+    if(lead) lead.status = acao === 'respondeu' ? 'respondeu' : acao === 'recusou' ? 'recusou' : 'contatado';
     renderFila();
   }catch(err){ alert('Não consegui salvar: ' + err.message); }
 }
-
-/* ---------- modal e Instagram ---------- */
-function abrirModal(corpo, botoes, acoes){
-  document.getElementById('modalBox').innerHTML = corpo + '<div class="row">' + botoes + '</div>';
-  Object.keys(acoes).forEach(sel => { document.querySelector(sel).onclick = acoes[sel]; });
-  document.getElementById('mNao').onclick = fecharModal;
-  document.getElementById('modal').classList.add('show');
-}
-function fecharModal(){ document.getElementById('modal').classList.remove('show'); }
-
-
 
 /* ---------- abas ---------- */
 function mostrar(aba){
@@ -430,19 +419,19 @@ function mostrar(aba){
 /* ---------- eventos ---------- */
 document.getElementById('tabTriagem').onclick = () => mostrar('triagem');
 document.getElementById('tabFila').onclick = () => mostrar('fila');
-document.getElementById('loteSel').onchange = () => { state.pilha = []; renderTriagem(); };
+document.getElementById('diaSel').onchange = () => { state.pilha = []; renderTriagem(); };
 document.getElementById('btnSync').onclick = sincronizar;
 document.getElementById('btnApagar').onclick = abrirModalApagar;
 document.getElementById('btnFinalizar').onclick = abrirModalFinalizar;
 document.getElementById('btnSyncFila').onclick = sincronizarFila;
-document.getElementById('filtroFila').onchange = renderFila;
 document.getElementById('filtroDia').onchange = renderFila;
+document.getElementById('filtroFila').onchange = renderFila;
 document.getElementById('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
 
 document.getElementById('listaFila').addEventListener('click', e => {
   const b = e.target.closest('button');
-  if(!b) return;
-  if(b.dataset.acao) return acaoFila(b.dataset.u, b.dataset.acao);
+  if(!b || !b.dataset.acao) return;
+  acaoFila(b.dataset.u, b.dataset.acao);
 });
 
 document.addEventListener('keydown', e => {
@@ -450,8 +439,8 @@ document.addEventListener('keydown', e => {
   if(document.getElementById('modal').classList.contains('show')) return;
   const tag = (e.target.tagName || '').toLowerCase();
   if(tag === 'input' || tag === 'select' || tag === 'textarea') return;
-  const lote = document.getElementById('loteSel').value;
-  const pend = pendentes(lote);
+  const d = document.getElementById('diaSel').value;
+  const pend = pendentes(d);
   if(!pend.length) return;
   const k = e.key.toLowerCase();
   if(k === 'p' || e.key === 'ArrowRight') decidir(pend[0], 'prospectar');
