@@ -32,7 +32,9 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .card-user{font-size:22px;font-weight:800;word-break:break-all}
 .card-nome{font-size:14px;color:var(--muted);margin-top:6px;min-height:18px}
 .card-meta{font-size:12px;color:var(--muted);margin-top:4px}
-.card .btn-ig{margin-top:14px;width:100%}
+.card .btn-ig{margin-top:14px;width:100%;display:block}
+.btn-link{text-decoration:none;text-align:center;padding:12px 14px;color:#fff;border-radius:10px;font-weight:700;font-size:14px}
+.item-btns a.btn-link{flex:1;min-width:100px;padding:9px 10px;font-size:12px}
 .decide{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .decide button{padding:18px 10px;font-size:16px}
 .undo{margin-top:12px;width:100%}
@@ -235,14 +237,14 @@ function renderTriagem(){
         '<div class="card-user">@' + esc(p.username) + '</div>' +
         '<div class="card-nome">' + esc(p.nome) + '</div>' +
         '<div class="card-meta">Extraído em ' + esc(String(p.data_extracao || '').slice(0, 10)) + '</div>' +
-        '<button class="btn-ig" id="btnAbrir">Abrir no Instagram</button>' +
+        '<a class="btn-ig btn-link" href="https://www.instagram.com/' + encodeURIComponent(p.username) + '/" target="_blank" rel="noopener">Abrir no Instagram</a>' +
         '<div class="decide">' +
           '<button class="btn-no" id="btnNao">✕ Descartar</button>' +
           '<button class="btn-ok" id="btnSim">✓ Prospectar</button>' +
         '</div>' +
         '<button class="btn-ghost undo" id="btnDesfazer"' + (state.pilha.length ? '' : ' disabled') + '>↶ Desfazer última</button>' +
       '</div>';
-    document.getElementById('btnAbrir').onclick = () => abrirIG(p.username);
+    
     document.getElementById('btnSim').onclick = () => decidir(p, 'prospectar');
     document.getElementById('btnNao').onclick = () => decidir(p, 'descartar');
     document.getElementById('btnDesfazer').onclick = desfazer;
@@ -355,7 +357,7 @@ function renderFila(){
   el.innerHTML = lista.map(l => {
     const canais = [l.whatsapp ? 'WhatsApp' : '', l.email ? 'e-mail' : ''].filter(Boolean).join(' + ') || 'sem contato';
     const u = esc(l.username);
-    let btns = '<button class="btn-ig" data-abrir="' + u + '">Instagram</button>';
+    let btns = '<a class="btn-ig btn-link" href="https://www.instagram.com/' + encodeURIComponent(l.username) + '/" target="_blank" rel="noopener">Instagram</a>';
     if(l.status === 'respondeu' || l.status === 'recusou'){
       btns += '<button class="btn-ghost" data-acao="reabrir" data-u="' + u + '">↶ Reabrir</button>';
     } else {
