@@ -99,10 +99,11 @@ button:disabled{opacity:.35;cursor:not-allowed}
       <div><b id="sHoje">0</b><span>enviados hoje</span></div>
       <div><b id="sResp">0</b><span>responderam</span></div>
     </div>
+    <input type="text" id="busca" placeholder="🔎 WhatsApp, e-mail, @ ou nome" style="margin-bottom:10px">
     <div class="row" style="margin-bottom:10px">
       <select id="filtroDia" class="grow"></select>
       <select id="filtroFila" class="grow">
-        <option value="todos">Todos</option>
+        <option value="ativos">Ativos (fila e contatados)</option>
         <option value="fila">Na fila</option>
         <option value="contatado">Contatados</option>
         <option value="respondeu">Responderam</option>
@@ -363,6 +364,22 @@ function atualizarFiltroDia(){
   else if(dias.length) sel.value = dias[0];
 }
 
+function digitos(s){ return String(s || '').replace(/\D/g, ''); }
+function matchStatus(l, s){
+  if(s === 'ativos') return l.status === 'fila' || l.status === 'contatado';
+  return l.status === s;
+}
+function matchBusca(l, q){
+  const t = q.trim().toLowerCase();
+  if(!t) return true;
+  const dq = digitos(t);
+  if(dq.length >= 6 && digitos(l.whatsapp).endsWith(dq.slice(-8))) return true;
+  if(String(l.email || '').toLowerCase().includes(t)) return true;
+  if(String(l.username || '').toLowerCase().includes(t.replace(/^@/, ''))) return true;
+  if(String(l.nome || '').toLowerCase().includes(t)) return true;
+  return false;
+}
+
 function renderFila(){
   const hj = hoje();
   const enviadosHoje = new Set(state.envios.filter(e => String(e.data_envio || '').slice(0, 10) === hj).map(e => e.username));
@@ -372,8 +389,9 @@ function renderFila(){
 
   const dia = document.getElementById('filtroDia').value;
   const status = document.getElementById('filtroFila').value;
+  const busca = document.getElementById('busca').value;
   const lista = state.fila
-    .filter(l => (status === 'todos' || l.status === status) && (dia === 'todos' || diaDoLead(l.username) === dia))
+    .filter(l => busca.trim() ? matchBusca(l, busca) : (matchStatus(l, status) && (dia === 'todos' || diaDoLead(l.username) === dia)))
     .sort((a, b) => String(a.username).localeCompare(String(b.username)));
   const el = document.getElementById('listaFila');
   if(!lista.length){ el.innerHTML = '<div class="empty">Nada aqui.</div>'; return; }
@@ -426,6 +444,7 @@ document.getElementById('btnFinalizar').onclick = abrirModalFinalizar;
 document.getElementById('btnSyncFila').onclick = sincronizarFila;
 document.getElementById('filtroDia').onchange = renderFila;
 document.getElementById('filtroFila').onchange = renderFila;
+document.getElementById('busca').oninput = renderFila;
 document.getElementById('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
 
 document.getElementById('listaFila').addEventListener('click', e => {
