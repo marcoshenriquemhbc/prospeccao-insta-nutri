@@ -104,6 +104,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
       <div><b id="sResp">0</b><span>responderam</span></div>
     </div>
     <div class="row" style="margin-bottom:10px">
+      <select id="filtroDia" class="grow"></select>
       <select id="filtroFila" class="grow">
         <option value="todos">Todos</option>
         <option value="fila">Na fila</option>
@@ -186,6 +187,9 @@ async function sincronizarFila(){
     const d = await r.json();
     state.fila = d.leads || [];
     state.envios = d.envios || [];
+    const rl = await fetch(API + '/prospeccao-triagem-lotes');
+    if(rl.ok){ const dl = await rl.json(); state.extraidos = dl.extraidos || []; state.eventos = dl.eventos || []; }
+    atualizarFiltroDia();
     renderFila();
   }catch(err){ setStatus('Erro na fila: ' + err.message); }
 }
@@ -338,6 +342,24 @@ async function confirmarLote(){
 }
 
 /* ---------- fila ---------- */
+function diaDoLead(u){
+  const ev = state.eventos.filter(e => e.username === u && e.acao === 'confirmado_fila')
+    .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)));
+  if(!ev.length) return { lote: '', dia: '' };
+  const lote = ev[ev.length - 1].lote;
+  const reg = state.extraidos.find(x => x.username === u && x.lote === lote);
+  return { lote: lote, dia: reg ? String(reg.data_extracao || '').slice(0, 10) : '' };
+}
+function dataBr(iso){ const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function atualizarFiltroDia(){
+  const sel = document.getElementById('filtroDia');
+  const atual = sel.value;
+  const dias = [...new Set(state.fila.map(l => diaDoLead(l.username).dia).filter(Boolean))].sort().reverse();
+  sel.innerHTML = '<option value="todos">Todos os dias</option>' +
+    dias.map(d => '<option value="' + d + '">' + dataBr(d) + '</option>').join('');
+  if(atual && (atual === 'todos' || dias.includes(atual))) sel.value = atual;
+}
+
 function renderFila(){
   const env = state.envios;
   const hj = hoje();
@@ -349,8 +371,9 @@ function renderFila(){
   document.getElementById('sResp').textContent = respN;
 
   const filtro = document.getElementById('filtroFila').value;
+  const dia = document.getElementById('filtroDia').value;
   const lista = state.fila
-    .filter(l => filtro === 'todos' || l.status === filtro)
+    .filter(l => (filtro === 'todos' || l.status === filtro) && (dia === 'todos' || diaDoLead(l.username).dia === dia))
     .sort((a, b) => String(a.username).localeCompare(String(b.username)));
   const el = document.getElementById('listaFila');
   if(!lista.length){ el.innerHTML = '<div class="empty">Nada aqui.</div>'; return; }
@@ -366,7 +389,7 @@ function renderFila(){
     }
     return '<div class="item"><div class="item-top"><div>' +
       '<div class="item-user">@' + u + '</div>' +
-      '<div class="item-meta">' + esc(l.nome) + ' · ' + canais + '</div></div>' +
+      '<div class="item-meta">' + esc(l.nome) + ' · ' + canais + (diaDoLead(l.username).lote ? ' · lote ' + esc(diaDoLead(l.username).lote) : '') + '</div></div>' +
       '<span class="pill ' + esc(l.status) + '">' + esc(l.status) + '</span></div>' +
       '<div class="item-btns">' + btns + '</div></div>';
   }).join('');
@@ -413,6 +436,7 @@ document.getElementById('btnApagar').onclick = abrirModalApagar;
 document.getElementById('btnFinalizar').onclick = abrirModalFinalizar;
 document.getElementById('btnSyncFila').onclick = sincronizarFila;
 document.getElementById('filtroFila').onchange = renderFila;
+document.getElementById('filtroDia').onchange = renderFila;
 document.getElementById('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
 
 document.getElementById('listaFila').addEventListener('click', e => {
