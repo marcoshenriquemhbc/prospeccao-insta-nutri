@@ -50,6 +50,10 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .item-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .item-btns button,.item-btns a.btn-link{flex:1;min-width:100px;padding:9px 10px;font-size:12px}
 .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:14px}
+.sel{font-size:11px;border-radius:6px;padding:2px 7px;margin-left:4px;display:inline-block}
+.sel.ok{background:#14532d;color:#86efac;font-weight:700}
+.sel.pend{border:1px dashed #6b7280;color:#9ca3af}
+.sel.none{color:#9ca3af}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .summary div{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
 .summary b{display:block;font-size:20px}
@@ -396,7 +400,9 @@ function renderFila(){
   const el = document.getElementById('listaFila');
   if(!lista.length){ el.innerHTML = '<div class="empty">Nada aqui.</div>'; return; }
   el.innerHTML = lista.map(l => {
-    const canais = [l.whatsapp ? 'WhatsApp' : '', l.email ? 'e-mail' : ''].filter(Boolean).join(' + ') || 'sem contato';
+    const enviadoPor = canal => state.envios.some(e => e.username === l.username && e.canal === canal);
+    const selo = (rot, canal, tem) => tem ? '<span class="sel ' + (enviadoPor(canal) ? 'ok' : 'pend') + '">' + rot + '</span>' : '';
+    const canais = (selo('WhatsApp', 'whatsapp', !!l.whatsapp) + selo('E-mail', 'email', !!l.email)) || '<span class="sel none">sem contato</span>';
     const u = esc(l.username);
     const lote = loteDoLead(l.username);
     let btns = '<a class="btn-ig btn-link" href="https://www.instagram.com/' + encodeURIComponent(l.username) + '/" target="_blank" rel="noopener">Instagram</a>';
