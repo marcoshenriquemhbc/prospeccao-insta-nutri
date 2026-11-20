@@ -114,6 +114,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
       <select id="filtroDia" class="grow"></select>
       <select id="filtroFila" class="grow">
         <option value="ativos">Ativos (fila e contatados)</option>
+        <option value="sem_canal">Sem canal (Instagram)</option>
         <option value="fila">Na fila</option>
         <option value="contatado">Contatados</option>
         <option value="respondeu">Responderam</option>
@@ -377,6 +378,7 @@ function atualizarFiltroDia(){
 function digitos(s){ return String(s || '').replace(/\D/g, ''); }
 function matchStatus(l, s){
   if(s === 'ativos') return l.status === 'fila' || l.status === 'contatado';
+  if(s === 'sem_canal') return l.status === 'fila' && !l.whatsapp && !l.email;
   return l.status === s;
 }
 function matchBusca(l, q){
