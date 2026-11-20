@@ -98,6 +98,12 @@ button:disabled{opacity:.35;cursor:not-allowed}
 
   <!-- ===== ABORDAGEM (fila por dia) ===== -->
   <section id="viewFila" hidden>
+    <div class="summary" id="painelNovos">
+      <div><b id="nInsta">0</b><span>Instagram (sem canal)</span></div>
+      <div><b id="nDisp">0</b><span>WhatsApp/e-mail pendente</span></div>
+      <div><b id="nTotal">0</b><span>total novos</span></div>
+    </div>
+    <div class="count" id="nFollow" style="margin-bottom:12px"></div>
     <div class="summary">
       <div><b id="sFila">0</b><span>na fila</span></div>
       <div><b id="sHoje">0</b><span>enviados hoje</span></div>
@@ -394,6 +400,14 @@ function renderFila(){
   const dia = document.getElementById('filtroDia').value;
   const status = document.getElementById('filtroFila').value;
   const busca = document.getElementById('busca').value;
+  const baseDia = state.fila.filter(l => dia === 'todos' || diaDoLead(l.username) === dia);
+  const semCanal = baseDia.filter(l => l.status === 'fila' && !l.whatsapp && !l.email).length;
+  const comCanal = baseDia.filter(l => l.status === 'fila' && (l.whatsapp || l.email)).length;
+  const followUp = baseDia.filter(l => l.status === 'contatado').length;
+  document.getElementById('nInsta').textContent = semCanal;
+  document.getElementById('nDisp').textContent = comCanal;
+  document.getElementById('nTotal').textContent = semCanal + comCanal;
+  document.getElementById('nFollow').textContent = followUp + ' contatado(s) sem resposta, também liberados para o Instagram';
   const lista = state.fila
     .filter(l => busca.trim() ? matchBusca(l, busca) : (matchStatus(l, status) && (dia === 'todos' || diaDoLead(l.username) === dia)))
     .sort((a, b) => String(a.username).localeCompare(String(b.username)));
