@@ -213,7 +213,7 @@ async function sincronizarFila(){
 function rotuloDia(d){
   const n = lotesDoDia(d).length;
   const p = itensDoDia(d).length;
-  return dataBr(d) + ' · ' + n + ' extração(ões) · ' + p + ' perfis' + (diaConfirmado(d) ? ' ✅' : '');
+  return dataBr(d) + ' · ' + n + ' extração(ões) · ' + p + ' perfis' + (diaConfirmado(d) && pendentes(d).length === 0 ? ' ✅' : '');
 }
 
 function atualizarDiaSel(){
@@ -237,22 +237,16 @@ function renderTriagem(){
   const tudo = itensDoDia(d);
   const pend = pendentes(d);
   const ok = aprovados(d).length;
-  const conf = diaConfirmado(d);
+  const desc = tudo.length - pend.length - ok;
   document.getElementById('barra').style.width = tudo.length ? ((tudo.length - pend.length) / tudo.length * 100) + '%' : '0';
   document.getElementById('contagem').textContent = tudo.length
     ? (tudo.length - pend.length) + ' de ' + tudo.length + ' decididos · ' + ok + ' para prospectar'
     : 'Nenhum perfil neste dia';
   const apagar = document.getElementById('btnApagar');
   apagar.disabled = !tudo.length || lotesDoDia(d).some(loteConfirmado);
-  apagar.title = apagar.disabled ? 'Há extrações já confirmadas' : 'Apagar as extrações deste dia';
+  apagar.title = apagar.disabled ? 'Há extrações já enviadas para a fila' : 'Apagar as extrações deste dia';
 
   if(!tudo.length){ area.innerHTML = '<div class="empty">Sem perfis neste dia.</div>'; fin.hidden = true; return; }
-
-  if(conf){
-    area.innerHTML = '<div class="done-box"><h2>Dia já enviado para a fila</h2><p>' + ok + ' perfil(s) aprovado(s) entraram na base de disparo.</p></div>';
-    fin.hidden = true;
-    return;
-  }
 
   if(pend.length){
     const p = pend[0];
@@ -271,14 +265,13 @@ function renderTriagem(){
     document.getElementById('btnSim').onclick = () => decidir(p, 'prospectar');
     document.getElementById('btnNao').onclick = () => decidir(p, 'descartar');
     document.getElementById('btnDesfazer').onclick = desfazer;
-    fin.hidden = true;
-    return;
+  } else {
+    area.innerHTML = '<div class="done-box"><h2>Nenhum perfil pendente</h2><p>Triagem deste dia concluída.</p></div>';
   }
 
-  area.innerHTML = '';
-  document.getElementById('finalTitulo').textContent = 'Triagem do dia concluída';
-  document.getElementById('finalTexto').textContent = ok + ' aprovado(s) e ' + (tudo.length - ok) + ' descartado(s) em ' + lotesDoDia(d).length + ' extração(ões). Confirmar o envio dos aprovados para a fila?';
-  fin.hidden = false;
+  fin.hidden = ok === 0;
+  document.getElementById('finalTitulo').textContent = pend.length ? 'Enviar os aprovados até agora' : 'Triagem do dia concluída';
+  document.getElementById('finalTexto').textContent = ok + ' aprovado(s), ' + desc + ' descartado(s), ' + pend.length + ' ainda sem decisão. Os aprovados entram na fila agora; o restante você tria depois e envia de novo.';
 }
 
 async function decidir(p, acao){
