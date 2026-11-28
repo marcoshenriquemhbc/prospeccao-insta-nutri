@@ -42,6 +42,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .kbd{font-size:11px;color:var(--muted);margin-top:10px}
 .list{margin-top:12px}
 .item{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px}
+.item.visto{background:#0e2a33;border-color:#0ea5e9}
 .item-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .item-user{font-weight:700;word-break:break-all}
 .item-meta{font-size:12px;color:var(--muted);margin-top:3px}
@@ -131,6 +132,16 @@ button:disabled{opacity:.35;cursor:not-allowed}
 <script>
 const API = 'https://n8n.iaatende.click/webhook';
 const state = { extraidos: [], eventos: [], fila: [], envios: [], pilha: [] };
+
+/* ---------- marcação de Instagram já aberto (salva no navegador) ---------- */
+const CHAVE_VISTOS = 'prospeccao_instagram_visto';
+let vistos = new Set();
+try{ vistos = new Set(JSON.parse(localStorage.getItem(CHAVE_VISTOS) || '[]')); }catch(e){}
+function salvarVistos(){ try{ localStorage.setItem(CHAVE_VISTOS, JSON.stringify([...vistos])); }catch(e){} }
+function marcarVisto(u, el){
+  if(!vistos.has(u)){ vistos.add(u); salvarVistos(); }
+  if(el) el.classList.add('visto');
+}
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function hoje(){ return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); }
@@ -414,14 +425,15 @@ function renderFila(){
     const canais = (selo('WhatsApp', 'whatsapp', !!l.whatsapp) + selo('E-mail', 'email', !!l.email)) || '<span class="sel none">sem contato</span>';
     const u = esc(l.username);
     const lote = loteDoLead(l.username);
-    let btns = '<a class="btn-ig btn-link" href="https://www.instagram.com/' + encodeURIComponent(l.username) + '/" target="_blank" rel="noopener">Instagram</a>';
+    let btns = '<a class="btn-ig btn-link" data-ig="1" data-u="' + u + '" href="https://www.instagram.com/' + encodeURIComponent(l.username) + '/" target="_blank" rel="noopener">Instagram</a>';
     if(l.status === 'respondeu' || l.status === 'recusou'){
       btns += '<button class="btn-ghost" data-acao="reabrir" data-u="' + u + '">↶ Reabrir</button>';
     } else {
       btns += '<button class="btn-ok" data-acao="respondeu" data-u="' + u + '">💬 Respondeu</button>' +
               '<button class="btn-no" data-acao="recusou" data-u="' + u + '">🚫 Recusou</button>';
     }
-    return '<div class="item"><div class="item-top"><div>' +
+    const classeVisto = vistos.has(l.username) ? ' visto' : '';
+    return '<div class="item' + classeVisto + '"><div class="item-top"><div>' +
       '<div class="item-user">@' + u + '</div>' +
       '<div class="item-meta">' + esc(l.nome) + ' · ' + canais + (lote ? ' · extração ' + esc(lote) : '') + '</div></div>' +
       '<span class="pill ' + esc(l.status) + '">' + esc(l.status) + '</span></div>' +
@@ -463,6 +475,8 @@ document.getElementById('busca').oninput = renderFila;
 document.getElementById('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
 
 document.getElementById('listaFila').addEventListener('click', e => {
+  const a = e.target.closest('a[data-ig]');
+  if(a){ marcarVisto(a.dataset.u, a.closest('.item')); return; }
   const b = e.target.closest('button');
   if(!b || !b.dataset.acao) return;
   acaoFila(b.dataset.u, b.dataset.acao);
